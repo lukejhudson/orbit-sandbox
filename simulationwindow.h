@@ -23,10 +23,14 @@ private:
     Simulation *sim;
     Body newBody;
     bool spawning;
+    Vector initialMousePos;
     Vector mousePos;
     double scale; // Draw objects smaller or larger based on zoom
-    int viewOffsetX; // Offset of 0 means origin is top left
-    int viewOffsetY;
+    int currentOffsetX; // Current offset. Initially 0 for origin top left
+    int currentOffsetY;
+    int newOffsetX; // Offset of 0 means origin is top left
+    int newOffsetY;
+    bool movingCamera;
 };
 
 #endif // SIMULATIONWINDOW_H

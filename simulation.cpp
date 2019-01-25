@@ -13,10 +13,8 @@
  * asteroids, then starts the simulation in a new thread.
  */
 Simulation::Simulation() {
-    width = 500;
-    height = 500;
     // Add central star to list of bodies
-    bodies.push_front(*new Body(1000, 50, new Vector(width / 2, height / 2), new Vector(0, 0), 0));
+    bodies.push_front(*new Body(1000, 50, new Vector(250, 250), new Vector(0, 0), 0));
     bodies.push_back(*new Body(5, 5, new Vector(200, 200), new Vector(1, 0), 1));
     bodies.push_back(*new Body(5, 5, new Vector(400, 400), new Vector(-2, 0), 1));
     std::cout << "Starting simulation... ";

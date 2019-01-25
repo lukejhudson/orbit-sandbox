@@ -18,8 +18,6 @@ public:
 
 private:
     std::list<Body> bodies;
-    int width; // Width of sim in pixels
-    int height; // Height of sim in pixels
     std::mutex mut; // Mutex used for locking bodies list
 };
 

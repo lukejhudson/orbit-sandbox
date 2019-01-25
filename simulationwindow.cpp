@@ -10,12 +10,18 @@
 SimulationWindow::SimulationWindow(Simulation *sim) {
     this->sim = sim;
     setTitle("Orbit Sandbox");
-    resize(500, 500);
+    resize(1000, 500);
     spawning = false;
+    initialMousePos = new Vector();
     mousePos = new Vector();
     // Start a timer to be used to render at 60 fps
     m_timerId = startTimer(1000/60);
     scale = 1;
+    currentOffsetX = 0;
+    currentOffsetY = 0;
+    newOffsetX = 0;
+    newOffsetY = 0;
+    movingCamera = false;
 }
 
 /**
@@ -38,12 +44,21 @@ void SimulationWindow::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         // Left click
         //std::cout << "Left click: " << event->x() << ", " << event->y() << std::endl;
-        newBody = *new Body(5, 5, new Vector(event->x() / scale, event->y() / scale), new Vector(), 1);
+        newBody = *new Body(5, 5,
+                            new Vector(event->x() / scale + currentOffsetX,
+                                       event->y() / scale + currentOffsetY),
+                            new Vector(), 1);
+        std::cout << "Spawning: " << newBody.getX() << ", " << newBody.getY() << std::endl;
         mousePos.setX(event->x() / scale);
         mousePos.setY(event->y() / scale);
         spawning = true;
     } else if (event->button() == Qt::MiddleButton) {
         // Adjust window offset so that screen can be moved around
+        mousePos.setX(event->x() / scale);
+        mousePos.setY(event->y() / scale);
+        initialMousePos.setX(event->x() / scale);
+        initialMousePos.setY(event->y() / scale);
+        movingCamera = true;
     } else {
         // Pass on other buttons to base class
         QWindow::mousePressEvent(event);
@@ -61,9 +76,15 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
         // Left click
         //std::cout << "Release left click: " << event->x() << ", " << event->y() << std::endl;
         spawning = false;
-        newBody.setVel(new Vector(0.1 * (newBody.getX() - (event->x() / scale)), 0.1 *
-                                  (newBody.getY() - (event->y() / scale))));
+        newBody.setVel(new Vector(0.1 * (newBody.getX() - (event->x() / scale) - currentOffsetX),
+                                  0.1 * (newBody.getY() - (event->y() / scale) - currentOffsetY)));
         sim->addBody(newBody);
+    } else if (event->button() == Qt::MiddleButton) {
+        movingCamera = false;
+        currentOffsetX += newOffsetX;
+        newOffsetX = 0;
+        currentOffsetY += newOffsetY;
+        newOffsetY = 0;
     } else {
         // Pass on other buttons to base class
         QWindow::mouseReleaseEvent(event);
@@ -77,11 +98,15 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
  * @param event The mouse move event to handle
  */
 void SimulationWindow::mouseMoveEvent(QMouseEvent *event) {
-    // IF MOVING CAMERA...
     if (spawning) {
         //std::cout << "Mouse move: " << event->x() << ", " << event->y() << std::endl;
         mousePos.setX(event->x() / scale);
         mousePos.setY(event->y() / scale);
+    } else if (movingCamera) {
+        mousePos.setX(event->x() / scale);
+        mousePos.setY(event->y() / scale);
+        newOffsetX = static_cast<int>(initialMousePos.getX() - mousePos.getX());
+        newOffsetY = static_cast<int>(initialMousePos.getY() - mousePos.getY());
     } else {
         // Pass on other buttons to base class
         QWindow::mouseMoveEvent(event);
@@ -126,8 +151,10 @@ void SimulationWindow::render(QPainter *p) {
                 break;
         }
         int bodyDiam = static_cast<int>(iter->getDiameter());
-        p->drawEllipse(static_cast<int>(scale * (iter->getX() - (bodyDiam / 2))),
-                       static_cast<int>(scale * (iter->getY() - (bodyDiam / 2))),
+        p->drawEllipse(static_cast<int>(scale * (iter->getX() - (bodyDiam / 2)) -
+                                        ((newOffsetX + currentOffsetX) * scale)),
+                       static_cast<int>(scale * (iter->getY() - (bodyDiam / 2)) -
+                                        ((newOffsetY + currentOffsetY) * scale)),
                        static_cast<int>(scale * bodyDiam),
                        static_cast<int>(scale * bodyDiam));
     }
@@ -137,13 +164,14 @@ void SimulationWindow::render(QPainter *p) {
     if (spawning) {
         //std::cout << "Drawing spawn stuff" << std::endl;
         int mouseX = static_cast<int>(mousePos.getX() * scale);
-        std::cout << "mouseX: " << mouseX << std::endl;
+        std::cout << "mouseX: " << mouseX;
         int mouseY = static_cast<int>(mousePos.getY() * scale);
-        std::cout << "mouseY: " << mouseY << std::endl;
-        int bodyX = static_cast<int>(newBody.getX() * scale);
-        std::cout << "bodyX: " << bodyX << std::endl;
-        int bodyY = static_cast<int>(newBody.getY() * scale);
-        std::cout << "bodyY: " << bodyY << std::endl;
+        std::cout << ", mouseY: " << mouseY << std::endl;
+        int bodyX = static_cast<int>((newBody.getX() - currentOffsetX) * scale);
+        //std::cout << "bodyX: " << bodyX;
+        int bodyY = static_cast<int>((newBody.getY() - currentOffsetY) * scale);
+        //std::cout << ", bodyY: " << bodyY << std::endl;
+        std::cout << "Offset: " << currentOffsetX << ", " << currentOffsetY << std::endl;
 
         int bodyDiam = static_cast<int>(scale * newBody.getDiameter());
         // Draw the body being spawned
