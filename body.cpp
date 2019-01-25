@@ -1,4 +1,6 @@
 #include <string>
+#include <math.h>
+#include <iostream>
 #include "body.h"
 
 /**
@@ -10,6 +12,7 @@ Body::Body() {
     pos = new Vector(-1, -1);
     vel = new Vector(-1, -1);
     type = -1;
+    active = true;
 }
 
 /**
@@ -26,6 +29,7 @@ Body::Body(double mass, double diam, Vector pos, Vector vel, int type) {
     this->pos = pos;
     this->vel = vel;
     this->type = type;
+    active = true;
 }
 
 /**
@@ -48,7 +52,7 @@ double Body::getDiameter() {
  * @brief Body::getPos
  * @return The position Vector of the body
  */
-Vector Body::getPos() {
+Vector Body::getPos() const {
     return pos;
 }
 
@@ -72,7 +76,7 @@ double Body::getY() {
  * @brief Body::getVel
  * @return The velocity Vector of the body
  */
-Vector Body::getVel() {
+Vector Body::getVel() const {
     return vel;
 }
 
@@ -160,7 +164,7 @@ void Body::setVelY(double y) {
 
 /**
  * @brief Body::getType
- * @return The type of the body
+ * @return The type of the body (0 = star, 1 = asteroid)
  */
 int Body::getType() {
     return type;
@@ -168,10 +172,29 @@ int Body::getType() {
 
 /**
  * @brief Body::setType
- * @param t New type of the body
+ * @param t New type of the body (0 = star, 1 = asteroid)
  */
 void Body::setType(int t) {
     type = t;
+}
+
+/**
+ * @brief Body::isActive Returns whether or not the body is active and
+ * therefore if it is able to interact with other bodies.
+ * @return True if the body is active
+ */
+bool Body::isActive() {
+    return active;
+}
+
+/**
+ * @brief Body::setActive Sets whether the body should be able to interact
+ * with other bodies. A body that is inactive will be removed from the
+ * simulation in the next tick.
+ * @param b Should the body be able to interact with others?
+ */
+void Body::setActive(bool b) {
+    active = b;
 }
 
 /**
@@ -183,6 +206,22 @@ void Body::move() {
 }
 
 /**
+ * @brief Body::combine Combines two bodies when they collide.
+ * @param b The Body to combine to this Body
+ */
+void Body::combine(Body b) {
+    mass += b.getMass();
+    // pi r1^2 + pi r2^2 = pi r3^2
+    // d1^2 + d2^2 = d3^2
+    std::cout << "Diam before: " << diameter;
+    diameter = hypot(diameter, b.getDiameter());
+    std::cout << "   Diam after: " << diameter << std::endl;
+    double massRatio = b.getMass() / (b.getMass() + mass);
+    // Doesn't take into account the angle that they collide
+    setVel(vel.add(b.getVel().scale(massRatio)));
+}
+
+/**
  * @brief Body::toString
  * @return A string representation of the body
  */
@@ -190,8 +229,16 @@ std::string Body::toString() {
     return "pos: " + pos.toString() + ", vel: " + vel.toString();
 }
 
-
-
+/**
+ * @brief operator == Compares two bodies and returns whether or not lhs == rhs.
+ * @param lhs The first Body to compare
+ * @param rhs The second Body to compare
+ * @return True if the two bodies are the sames
+ */
+bool Body::operator==(const Body& rhs) {
+    return this->getPos().equals(rhs.getPos())
+            && this->getVel().equals(rhs.getVel());
+}
 
 
 

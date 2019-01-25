@@ -13,10 +13,10 @@ public:
     Body(double mass, double diam, Vector pos, Vector vel, int type);
     double getMass();
     double getDiameter();
-    Vector getPos();
+    Vector getPos() const;
     double getX();
     double getY();
-    Vector getVel();
+    Vector getVel() const;
     double getVelX();
     double getVelY();
     void setPos(Vector v);
@@ -29,8 +29,12 @@ public:
     void setVelY(double y);
     int getType();
     void setType(int t);
+    bool isActive();
+    void setActive(bool b);
     void move(); // Add vel to pos
+    void combine(Body b); // Combine two bodies together
     std::string toString();
+    bool operator==(const Body& b);
 
 private:
     double mass;
@@ -38,6 +42,7 @@ private:
     Vector pos;
     Vector vel;
     int type; // What does the body represent? 0 = star, 1 = asteroid
+    bool active; // Should the body interact with other bodies?
 };
 
 #endif // BODY_H

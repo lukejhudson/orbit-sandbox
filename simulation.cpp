@@ -61,21 +61,30 @@ void Simulation::addBody(Body b) {
  */
 void Simulation::run() {
     while (true) {
-        //std::cout << "Calcualtions" << std::endl;
+        //std::cout << "Calculations" << std::endl;
         // For each body
         for (std::list<Body>::iterator iter1 = bodies.begin(); iter1 != bodies.end(); ++iter1) {
             // For each other body
             for (std::list<Body>::iterator iter2 = bodies.begin(); iter2 != bodies.end(); ++iter2) {
-                // Make sure the two bodies are not the same
-                if (iter1 != iter2) {
+                // Make sure the two bodies are not the same and that they are both active
+                if (iter1 != iter2 && iter1->isActive() && iter2->isActive()) {
+                    // If collision (dist between is less than half the sum of their diameters)
+                    if (iter1->getPos().squareDist(iter2->getPos()) <
+                            pow(iter1->getDiameter() / 2, 2) + pow(iter2->getDiameter() / 2, 2)) {
+                        //std::cout << "COLLISION" << std::endl;
+                        // Combine the two colliding bodies, and mark the second body for removal
+                        iter1->combine(*iter2);
+                        iter2->setActive(false);
+                    }
                     // Calculate gravitational force exerted on body and update velocity
                     // vel += (G * mass2 * (pos2 - pos 1)) / (dist ^ 3)
                     // vel += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
                     //std::cout << "vel before: " << iter1->getVel().toString();
-                    iter1->setVel(
-                        iter1->getVel().add(
-                            (iter2->getPos().sub(iter1->getPos())).scale(
-                                G * iter2->getMass() / pow(iter2->getPos().distance(iter1->getPos()), 3))
+                    iter1->setVel( // Set velocity
+                        iter1->getVel().add( // Add following to current velocity
+                            (iter2->getPos().sub(iter1->getPos())).scale( // (pos2 - pos1) scaled by
+                                G * iter2->getMass() / // G * mass2 divided by
+                                    pow(iter2->getPos().distance(iter1->getPos()), 3)) // (dist^3)
                         )
                     );
                     //std::cout << "\tvel after: " << iter1->getVel().toString() << std::endl;
@@ -84,14 +93,20 @@ void Simulation::run() {
         }
         //std::cout << "Moving" << std::endl;
         // For each body
-        for (std::list<Body>::iterator iter = bodies.begin(); iter != bodies.end(); ++iter) {
+        for (std::list<Body>::iterator iter = bodies.end(); iter != bodies.begin(); --iter) {
             //std::cout << "Moving body: " << iter->toString() << std::endl;
-            // Update position
-            iter->move();
-            // Hit star --> (lock) delete / explode? (unlock)
+            // Update position if the body is active
+            if (iter->isActive()) {
+                iter->move();
+            } else {
+                // Remove body if it isn't active
+                mut.lock();
+                bodies.remove(*iter);
+                mut.unlock();
+            }
         }
         //std::cout << "Done moving" << std::endl;
-        // Sleep 10 ms
+        // Sleep to maintain ~17 ticks per second
         //std::cout << "Sleeping" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(17));
         //std::cout << "Done sleeping" << std::endl;

@@ -72,7 +72,7 @@ void RasterWindow::renderNow() {
     QPainter painter(device);
 
     // Draw the gradient background on the window
-    painter.fillRect(0, 0, width(), height(), QGradient::NightFade);
+    painter.fillRect(0, 0, width(), height(), QColor(0, 0, 0));
     render(&painter);
     painter.end();
 

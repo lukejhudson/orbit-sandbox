@@ -15,6 +15,7 @@ SimulationWindow::SimulationWindow(Simulation *sim) {
     mousePos = new Vector();
     // Start a timer to be used to render at 60 fps
     m_timerId = startTimer(1000/60);
+    scale = 1;
 }
 
 /**
@@ -37,8 +38,12 @@ void SimulationWindow::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         // Left click
         //std::cout << "Left click: " << event->x() << ", " << event->y() << std::endl;
-        newBody = *new Body(5, 5, new Vector(event->x(), event->y()), new Vector(), 1);
+        newBody = *new Body(5, 5, new Vector(event->x() / scale, event->y() / scale), new Vector(), 1);
+        mousePos.setX(event->x() / scale);
+        mousePos.setY(event->y() / scale);
         spawning = true;
+    } else if (event->button() == Qt::MiddleButton) {
+        // Adjust window offset so that screen can be moved around
     } else {
         // Pass on other buttons to base class
         QWindow::mousePressEvent(event);
@@ -56,7 +61,8 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
         // Left click
         //std::cout << "Release left click: " << event->x() << ", " << event->y() << std::endl;
         spawning = false;
-        newBody.setVel(new Vector(0.1 * (newBody.getX() - event->x()), 0.1 * (newBody.getY() - event->y())));
+        newBody.setVel(new Vector(0.1 * (newBody.getX() - (event->x() / scale)), 0.1 *
+                                  (newBody.getY() - (event->y() / scale))));
         sim->addBody(newBody);
     } else {
         // Pass on other buttons to base class
@@ -71,13 +77,29 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
  * @param event The mouse move event to handle
  */
 void SimulationWindow::mouseMoveEvent(QMouseEvent *event) {
+    // IF MOVING CAMERA...
     if (spawning) {
         //std::cout << "Mouse move: " << event->x() << ", " << event->y() << std::endl;
-        mousePos.setX(event->x());
-        mousePos.setY(event->y());
+        mousePos.setX(event->x() / scale);
+        mousePos.setY(event->y() / scale);
     } else {
         // Pass on other buttons to base class
         QWindow::mouseMoveEvent(event);
+    }
+}
+
+/**
+ * @brief SimulationWindow::wheelEvent Handles mouse wheel scroll events.
+ * Scrolling down will zoom the simulation out, while scrolling up will
+ * zoom in on the simulation.
+ * @param event The wheel event to handle
+ */
+void SimulationWindow::wheelEvent(QWheelEvent *event) {
+    //std::cout << "delta: " << event->delta() << std::endl;
+    if (event->delta() > 0) {
+        scale *= 1.1;
+    } else {
+        scale *= 0.9;
     }
 }
 
@@ -89,7 +111,8 @@ void SimulationWindow::render(QPainter *p) {
     //std::cout << "Getting bodies" << std::endl;
     std::list<Body> bodies = sim->getBodies();
     QColor starColour(234, 200, 46);
-    QColor asteroidColour(81, 21, 13);
+    // QColor asteroidColour(81, 21, 13);
+    QColor asteroidColour(76, 243, 255);
     p->setPen(Qt::NoPen); // No outline
 
     //std::cout << "Drawing bodies" << std::endl;
@@ -103,27 +126,31 @@ void SimulationWindow::render(QPainter *p) {
                 break;
         }
         int bodyDiam = static_cast<int>(iter->getDiameter());
-        p->drawEllipse(static_cast<int>(iter->getX() - (bodyDiam / 2)), static_cast<int>(iter->getY() - (bodyDiam / 2)),
-                       bodyDiam, bodyDiam);
+        p->drawEllipse(static_cast<int>(scale * (iter->getX() - (bodyDiam / 2))),
+                       static_cast<int>(scale * (iter->getY() - (bodyDiam / 2))),
+                       static_cast<int>(scale * bodyDiam),
+                       static_cast<int>(scale * bodyDiam));
     }
 
     // If we are spawning a new body (left click is down), draw it and
     // an arrow to show its direction and give an indication of its velocity
     if (spawning) {
         //std::cout << "Drawing spawn stuff" << std::endl;
-        int mouseX = static_cast<int>(mousePos.getX());
-        int mouseY = static_cast<int>(mousePos.getY());
-        int bodyX = static_cast<int>(newBody.getX());
-        int bodyY = static_cast<int>(newBody.getY());
+        int mouseX = static_cast<int>(mousePos.getX() * scale);
+        std::cout << "mouseX: " << mouseX << std::endl;
+        int mouseY = static_cast<int>(mousePos.getY() * scale);
+        std::cout << "mouseY: " << mouseY << std::endl;
+        int bodyX = static_cast<int>(newBody.getX() * scale);
+        std::cout << "bodyX: " << bodyX << std::endl;
+        int bodyY = static_cast<int>(newBody.getY() * scale);
+        std::cout << "bodyY: " << bodyY << std::endl;
 
-        int bodyDiam = static_cast<int>(newBody.getDiameter());
+        int bodyDiam = static_cast<int>(scale * newBody.getDiameter());
         // Draw the body being spawned
         p->drawEllipse(static_cast<int>(bodyX - (bodyDiam / 2)), static_cast<int>(bodyY - (bodyDiam / 2)),
                        bodyDiam, bodyDiam);
 
-        QColor black(0, 0, 0);
-        p->setBrush(black);
-        p->setPen(Qt::PenStyle::SolidLine);
+        p->setPen(QColor(255, 255, 255));
         // Line from mouse to new asteroid
         p->drawLine(mouseX, mouseY, bodyX, bodyY);
         // Line from asteroid forwards

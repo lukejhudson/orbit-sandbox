@@ -15,6 +15,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     int m_timerId;
@@ -23,6 +24,9 @@ private:
     Body newBody;
     bool spawning;
     Vector mousePos;
+    double scale; // Draw objects smaller or larger based on zoom
+    int viewOffsetX; // Offset of 0 means origin is top left
+    int viewOffsetY;
 };
 
 #endif // SIMULATIONWINDOW_H
