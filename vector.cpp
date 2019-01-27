@@ -75,6 +75,15 @@ void Vector::set(double x, double y) {
 }
 
 /**
+ * @brief Vector::set Sets both the x and y values to those in the given Vector.
+ * @param v The Vector to copy the x and y values from
+ */
+void Vector::set(Vector v) {
+    x = v.getX();
+    y = v.getY();
+}
+
+/**
  * @brief Vector::dot Calculates the dot product of this Vector and the Vector v.
  * @param v  The Vector to calculate the dot product with
  * @return The dot product of this Vector and the Vector v
@@ -86,10 +95,12 @@ double Vector::dot(Vector v) {
 /**
  * @brief Vector::scale Scale the vector by scale factor s.
  * @param s The scale factor to scale this Vector by
- * @return A new Vector holding the value after the scaling calculation
+ * @return This Vector with the updated x and y values
  */
 Vector Vector::scale(double s) {
-    return new Vector(x * s, y * s);
+    x *= s;
+    y *= s;
+    return this;
 }
 
 /**
@@ -156,21 +167,23 @@ void Vector::unitVector() {
 /**
  * @brief Vector::add Adds this Vector to the given Vector v.
  * @param v The Vector to add to this Vector
- * @return A new Vector which holds the result of the calculation in its x
- * and y values
+ * @return This Vector with the updated x and y values
  */
 Vector Vector::add(Vector v) {
-    return new Vector(x + v.getX(), y + v.getY());
+    x += v.getX();
+    y += v.getY();
+    return this;
 }
 
 /**
  * @brief Vector::sub Subtracts the given Vector v from this Vector.
  * @param v The Vector to subtract from this Vector
- * @return A new Vector which holds the result of the calculation in its x
- * and y values
+ * @return This Vector with the updated x and y values
  */
 Vector Vector::sub(Vector v) {
-    return new Vector(x - v.getX(), y - v.getY());
+    x -= v.getX();
+    y -= v.getY();
+    return this;
 }
 
 /**
@@ -180,6 +193,14 @@ Vector Vector::sub(Vector v) {
  */
 bool Vector::equals(Vector v) {
     return isEqual(x, v.getX()) && isEqual(y, v.getY());
+}
+
+/**
+ * @brief Vector::copy Returns a copy of this Vector.
+ * @return A copy of this Vector
+ */
+Vector Vector::copy() {
+    return new Vector(x, y);
 }
 
 /**

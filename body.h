@@ -33,6 +33,7 @@ public:
     void setActive(bool b);
     void move(); // Add vel to pos
     void combine(Body b); // Combine two bodies together
+    Body copy(); // Copies this Body
     std::string toString();
     bool operator==(const Body& b);
 

@@ -110,7 +110,8 @@ void Body::setPos(Vector v) {
  * @param y New y-coordinate of the body
  */
 void Body::setPos(double x, double y) {
-    pos = new Vector(x, y);
+    pos.setX(x);
+    pos.setY(y);
 }
 
 /**
@@ -143,7 +144,8 @@ void Body::setVel(Vector v) {
  * @param y New y-velocity of the body
  */
 void Body::setVel(double x, double y) {
-    vel = new Vector(x, y);
+    vel.setX(x);
+    vel.setY(y);
 }
 
 /**
@@ -202,7 +204,7 @@ void Body::setActive(bool b) {
  * Vector to its position Vector.
  */
 void Body::move() {
-    setPos(pos.add(vel));
+    pos.add(vel);
 }
 
 /**
@@ -218,7 +220,15 @@ void Body::combine(Body b) {
     std::cout << "   Diam after: " << diameter << std::endl;
     double massRatio = b.getMass() / (b.getMass() + mass);
     // Doesn't take into account the angle that they collide
-    setVel(vel.add(b.getVel().scale(massRatio)));
+    vel.add(b.getVel().scale(massRatio));
+}
+
+/**
+ * @brief Body::copy Returns a copy of this Body.
+ * @return A copy of this Body
+ */
+Body Body::copy() {
+    return *new Body(mass, diameter, pos.copy(), vel.copy(), type);
 }
 
 /**

@@ -48,7 +48,7 @@ void SimulationWindow::mousePressEvent(QMouseEvent *event) {
                             new Vector(event->x() / scale + currentOffsetX,
                                        event->y() / scale + currentOffsetY),
                             new Vector(), 1);
-        std::cout << "Spawning: " << newBody.getX() << ", " << newBody.getY() << std::endl;
+        //std::cout << "Spawning: " << newBody.getX() << ", " << newBody.getY() << std::endl;
         mousePos.setX(event->x() / scale);
         mousePos.setY(event->y() / scale);
         spawning = true;
@@ -76,8 +76,8 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
         // Left click
         //std::cout << "Release left click: " << event->x() << ", " << event->y() << std::endl;
         spawning = false;
-        newBody.setVel(new Vector(0.1 * (newBody.getX() - (event->x() / scale) - currentOffsetX),
-                                  0.1 * (newBody.getY() - (event->y() / scale) - currentOffsetY)));
+        newBody.setVelX(0.1 * (newBody.getX() - (event->x() / scale) - currentOffsetX));
+        newBody.setVelY(0.1 * (newBody.getY() - (event->y() / scale) - currentOffsetY));
         sim->addBody(newBody);
     } else if (event->button() == Qt::MiddleButton) {
         movingCamera = false;
@@ -122,9 +122,13 @@ void SimulationWindow::mouseMoveEvent(QMouseEvent *event) {
 void SimulationWindow::wheelEvent(QWheelEvent *event) {
     //std::cout << "delta: " << event->delta() << std::endl;
     if (event->delta() > 0) {
-        scale *= 1.1;
+        scale += scale * 0.1;
+        currentOffsetX += (0.05 * width()) / scale;
+        currentOffsetY += (0.05 * height()) / scale;
     } else {
-        scale *= 0.9;
+        scale -= scale * 0.1;
+        currentOffsetX -= (0.05 * width()) / scale;
+        currentOffsetY -= (0.05 * height()) / scale;
     }
 }
 
@@ -164,14 +168,14 @@ void SimulationWindow::render(QPainter *p) {
     if (spawning) {
         //std::cout << "Drawing spawn stuff" << std::endl;
         int mouseX = static_cast<int>(mousePos.getX() * scale);
-        std::cout << "mouseX: " << mouseX;
+        //std::cout << "mouseX: " << mouseX;
         int mouseY = static_cast<int>(mousePos.getY() * scale);
-        std::cout << ", mouseY: " << mouseY << std::endl;
+        //std::cout << ", mouseY: " << mouseY << std::endl;
         int bodyX = static_cast<int>((newBody.getX() - currentOffsetX) * scale);
         //std::cout << "bodyX: " << bodyX;
         int bodyY = static_cast<int>((newBody.getY() - currentOffsetY) * scale);
         //std::cout << ", bodyY: " << bodyY << std::endl;
-        std::cout << "Offset: " << currentOffsetX << ", " << currentOffsetY << std::endl;
+        //std::cout << "Offset: " << currentOffsetX << ", " << currentOffsetY << std::endl;
 
         int bodyDiam = static_cast<int>(scale * newBody.getDiameter());
         // Draw the body being spawned
