@@ -7,7 +7,8 @@
 
 class SimulationWindow : public RasterWindow {
 public:
-    SimulationWindow(Simulation *sim);
+    SimulationWindow(Simulation *sim, Sprites sprites);
+    void setSpawnType(int type);
 
 protected:
     void timerEvent(QTimerEvent *) override;
@@ -21,8 +22,10 @@ private:
     int m_timerId;
     std::mutex mut;
     Simulation *sim;
+    Sprites sprites;
     Body newBody;
     bool spawning;
+    int spawnType = 1; // Initially asteroid
     Vector initialMousePos;
     Vector mousePos;
     double scale; // Draw objects smaller or larger based on zoom

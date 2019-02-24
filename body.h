@@ -1,8 +1,10 @@
 #ifndef BODY_H
 #define BODY_H
 
+#include <QtGui>
 #include <string>
 #include "vector.h"
+#include "sprites.h"
 
 /*
  * Class for a generic body such as an asteroid or star.
@@ -11,8 +13,12 @@ class Body {
 public:
     Body();
     Body(double mass, double diam, Vector pos, Vector vel, int type);
+    Body(double mass, double diam, Vector pos, Vector vel, int type, QImage img);
+    Body(int type);
     double getMass();
+    void setMass(double m);
     double getDiameter();
+    void setDiameter(double d);
     Vector getPos() const;
     double getX();
     double getY();
@@ -36,6 +42,9 @@ public:
     Body copy(); // Copies this Body
     std::string toString();
     bool operator==(const Body& b);
+    QImage* getSprite();
+    void setSprite(QImage img);
+    void resizeSprite(Sprites sprites, double scale);
 
 private:
     double mass;
@@ -44,6 +53,7 @@ private:
     Vector vel;
     int type; // What does the body represent? 0 = star, 1 = asteroid
     bool active; // Should the body interact with other bodies?
+    QImage *sprite = nullptr;
 };
 
 #endif // BODY_H

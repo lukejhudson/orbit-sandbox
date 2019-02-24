@@ -80,13 +80,6 @@ void RasterWindow::renderNow() {
     m_backingStore->endPaint();
     // Present the contents in the back buffer
     m_backingStore->flush(rect);
-
-    /*
-     * Want to render 60 (?) times each second --> Timer similar to clock
-     * Grab list of bodies from simulation and draw them on the screen
-     * If LMB down --> Draw extra body (but not part of simulation so no interactions)
-     * and line from mouse to body, arrow from body forwards (and potentially expected path later)
-     */
 }
 
 /*

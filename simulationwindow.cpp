@@ -1,5 +1,7 @@
 #include <list>
 #include <iostream>
+#include <QtWidgets>
+#include <QMainWindow>
 #include "simulationwindow.h"
 
 /**
@@ -7,7 +9,7 @@
  * window and begins displaying the bodies in the given Simulation.
  * @param sim The simulation to display in the window
  */
-SimulationWindow::SimulationWindow(Simulation *sim) {
+SimulationWindow::SimulationWindow(Simulation *sim, Sprites sprites) {
     this->sim = sim;
     setTitle("Orbit Sandbox");
     resize(1000, 500);
@@ -15,13 +17,18 @@ SimulationWindow::SimulationWindow(Simulation *sim) {
     initialMousePos = new Vector();
     mousePos = new Vector();
     // Start a timer to be used to render at 60 fps
-    m_timerId = startTimer(1000/60);
     scale = 1;
     currentOffsetX = 0;
     currentOffsetY = 0;
     newOffsetX = 0;
     newOffsetY = 0;
     movingCamera = false;
+
+    this->sprites = sprites;
+
+    sim->setSprites(scale);
+
+    m_timerId = startTimer(1000/60);
 }
 
 /**
@@ -44,10 +51,27 @@ void SimulationWindow::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         // Left click
         //std::cout << "Left click: " << event->x() << ", " << event->y() << std::endl;
-        newBody = *new Body(5, 5,
-                            new Vector(event->x() / scale + currentOffsetX,
-                                       event->y() / scale + currentOffsetY),
-                            new Vector(), 1);
+        newBody = *new Body(spawnType);
+        newBody.setPos(event->x() / scale + currentOffsetX,
+                       event->y() / scale + currentOffsetY);
+        switch (spawnType) {
+            case 0: // Star
+                newBody.setSprite(sprites.starImage.scaled(static_cast<int>(newBody.getDiameter() * scale),
+                                                           static_cast<int>(newBody.getDiameter() * scale)));
+                break;
+            case 1: // Asteroid
+                newBody.setSprite(sprites.asteroidImage.scaled(static_cast<int>(newBody.getDiameter() * scale),
+                                                               static_cast<int>(newBody.getDiameter() * scale)));
+                break;
+            case 2: // White dwarf
+                newBody.setSprite(sprites.whitedwarfImage.scaled(static_cast<int>(newBody.getDiameter() * scale),
+                                                                 static_cast<int>(newBody.getDiameter() * scale)));
+                break;
+            case 3: // Black hole
+                newBody.setSprite(sprites.blackholeImage.scaled(static_cast<int>(newBody.getDiameter() * scale),
+                                                                static_cast<int>(newBody.getDiameter() * scale)));
+                break;
+        }
         //std::cout << "Spawning: " << newBody.getX() << ", " << newBody.getY() << std::endl;
         mousePos.setX(event->x() / scale);
         mousePos.setY(event->y() / scale);
@@ -130,6 +154,7 @@ void SimulationWindow::wheelEvent(QWheelEvent *event) {
         currentOffsetX -= (0.05 * width()) / scale;
         currentOffsetY -= (0.05 * height()) / scale;
     }
+    sim->setSprites(scale);
 }
 
 /**
@@ -146,21 +171,12 @@ void SimulationWindow::render(QPainter *p) {
 
     //std::cout << "Drawing bodies" << std::endl;
     for (std::list<Body>::iterator iter = bodies.begin(); iter != bodies.end(); ++iter) {
-        switch (iter->getType()) {
-            case 0:
-                p->setBrush(starColour);
-                break;
-            case 1:
-                p->setBrush(asteroidColour);
-                break;
-        }
         int bodyDiam = static_cast<int>(iter->getDiameter());
-        p->drawEllipse(static_cast<int>(scale * (iter->getX() - (bodyDiam / 2)) -
+        p->drawImage(static_cast<int>(scale * (iter->getX() - (bodyDiam / 2)) -
                                         ((newOffsetX + currentOffsetX) * scale)),
-                       static_cast<int>(scale * (iter->getY() - (bodyDiam / 2)) -
+                     static_cast<int>(scale * (iter->getY() - (bodyDiam / 2)) -
                                         ((newOffsetY + currentOffsetY) * scale)),
-                       static_cast<int>(scale * bodyDiam),
-                       static_cast<int>(scale * bodyDiam));
+                     *iter->getSprite());
     }
 
     // If we are spawning a new body (left click is down), draw it and
@@ -179,8 +195,9 @@ void SimulationWindow::render(QPainter *p) {
 
         int bodyDiam = static_cast<int>(scale * newBody.getDiameter());
         // Draw the body being spawned
-        p->drawEllipse(static_cast<int>(bodyX - (bodyDiam / 2)), static_cast<int>(bodyY - (bodyDiam / 2)),
-                       bodyDiam, bodyDiam);
+        p->drawImage(static_cast<int>(bodyX - (bodyDiam / 2)),
+                     static_cast<int>(bodyY - (bodyDiam / 2)),
+                     *newBody.getSprite());
 
         p->setPen(QColor(255, 255, 255));
         // Line from mouse to new asteroid
@@ -208,7 +225,14 @@ void SimulationWindow::render(QPainter *p) {
     }
 }
 
-
+/**
+ * @brief SimulationWindow::setSpawnType Sets the type of body
+ * that will spawn when the user clicks and drags the mouse.
+ * @param type The type of body to spawn
+ */
+void SimulationWindow::setSpawnType(int type) {
+    spawnType = type;
+}
 
 
 
