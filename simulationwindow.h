@@ -23,9 +23,9 @@ private:
     std::mutex mut;
     Simulation *sim;
     Sprites sprites;
-    Body newBody;
+    Body *newBody;
     bool spawning;
-    int spawnType = 1; // Initially asteroid
+    int spawnType = 0; // Initially asteroid
     Vector initialMousePos;
     Vector mousePos;
     double scale; // Draw objects smaller or larger based on zoom

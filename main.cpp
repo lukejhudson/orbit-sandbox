@@ -14,17 +14,10 @@ int main(int argc, char **argv) {
      */
     QApplication app(argc, argv);
 
-    Sprites sprites;
-
-    Simulation sim(sprites);
-
-    SimulationWindow *simwin = new SimulationWindow(&sim, sprites);
-    QWidget *container = QWidget::createWindowContainer(simwin);
-
     // RasterWindow window; // Initialise class
     //AnalogClockWindow window;
     //SimulationWindow *window = new SimulationWindow(&sim, sprites);
-    MainWindow *window = new MainWindow(&sim, sprites, simwin, container);
+    MainWindow *window = new MainWindow();
     window->show(); // Make window visible
 
     // Enter application's event loop so the application can run

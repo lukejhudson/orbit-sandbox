@@ -57,24 +57,39 @@ Body::Body(double mass, double diam, Vector pos, Vector vel, int type, QImage im
  */
 Body::Body(int type) {
     // Specific mass and diameter for each type
+    int rand;
     switch (type) {
-        case 0: // Star
-            mass = 1000;
-            diameter = 50;
+        case 0: // Asteroid
+            // Mass and diam = 2 +/- 1
+            rand = 1 + std::rand() % 3;
+            mass = rand;
+            diameter = rand;
             break;
-        case 1: // Asteroid
-            mass = 5;
-            diameter = 5;
+        case 1: // Planet
+            // Mass and diam = 10 +/- 5
+            mass = 5 + std::rand() % 11;
+            diameter = 5 + std::rand() % 11;
             break;
-        case 2: // White dwarf
-            mass = 1000;
-            diameter = 10;
+        case 2: // Star
+            // Mass = 1000 +/- 250
+            mass = 750 + std::rand() % 501;
+            // Diam = 50 +/- 10
+            diameter = 40 + std::rand() % 21;
             break;
-        case 3: // Black hole
-            mass = 5000;
-            diameter = 50;
+        case 3: // White dwarf
+            // Mass = 1000 +/- 250
+            mass = 750 + std::rand() % 501;
+            // Diam = 10 +/- 5
+            diameter = 5 + std::rand() % 11;
+            break;
+        case 4: // Black hole
+            // Mass = 5000 +- 1250
+            mass = 3750 + std::rand() % 2501;
+            // Diam = 50 +/- 12
+            diameter = 38 + std::rand() % 25;
             break;
     }
+    //std::cout << "Type: " << type << "\tMass: " << mass << "\tDiam: " << diameter << std::endl;
     // Generic information
     pos = new Vector(-1, -1);
     vel = new Vector(-1, -1);
@@ -232,7 +247,8 @@ void Body::setVelY(double y) {
 
 /**
  * @brief Body::getType
- * @return The type of the body (0 = star, 1 = asteroid)
+ * @return The type of the body (0 = asteroid, 1 = planet,
+ * 2 = star, 3 = dwarf star, 4 = black hole)
  */
 int Body::getType() {
     return type;
@@ -240,10 +256,27 @@ int Body::getType() {
 
 /**
  * @brief Body::setType
- * @param t New type of the body (0 = star, 1 = asteroid)
+ * @param t New type of the body (0 = asteroid, 1 = planet,
+ * 2 = star, 3 = dwarf star, 4 = black hole)
  */
 void Body::setType(int t) {
     type = t;
+}
+
+/**
+ * @brief Body::getplanetType
+ * @return The type of the planet, i.e. which sprites it should take
+ */
+int Body::getPlanetType() {
+    return planetType;
+}
+
+/**
+ * @brief Body::setType
+ * @param t New type of the planet, i.e. which sprites it should take
+ */
+void Body::setPlanetType(int t) {
+    planetType = t;
 }
 
 /**
@@ -277,20 +310,20 @@ void Body::move() {
  * @brief Body::combine Combines two bodies when they collide.
  * @param b The Body to combine to this Body
  */
-void Body::combine(Body b) {
-    double bMass = b.getMass();
+void Body::combine(Body *b) {
+    double bMass = b->getMass();
     std::cout << "Diam before: " << diameter;
-    mass += b.getMass();
-    diameter = hypot(diameter, b.getDiameter());
+    mass += b->getMass();
+    diameter = hypot(diameter, b->getDiameter());
     double massRatio = bMass / (bMass + mass);
-    vel.add(b.getVel().scale(massRatio));
+    vel.add(b->getVel().scale(massRatio));
     std::cout << "   Diam after: " << diameter << std::endl;
 
 
     // pi r1^2 + pi r2^2 = pi r3^2
     // d1^2 + d2^2 = d3^2
 
-    // Doesn't take into account the angle that they collide
+    // Doesn't take into account the angle at which they collide
 
 }
 
@@ -298,8 +331,8 @@ void Body::combine(Body b) {
  * @brief Body::copy Returns a copy of this Body.
  * @return A copy of this Body
  */
-Body Body::copy() {
-    return *new Body(mass, diameter, pos.copy(), vel.copy(), type);
+Body* Body::copy() {
+    return new Body(mass, diameter, pos.copy(), vel.copy(), type, *sprite);
 }
 
 /**
@@ -324,7 +357,7 @@ bool Body::operator==(const Body& rhs) {
 
 /**
  * @brief Body::getSprite Returns this Body's sprite.
- * @return
+ * @return This Body's sprite
  */
 QImage* Body::getSprite() {
     //std::cout << "getSprite: " << sprite->isNull() << std::endl;
@@ -333,15 +366,15 @@ QImage* Body::getSprite() {
 
 /**
  * @brief Body::setSprite Sets this Body's sprite.
- * @param sprite The new sprite for the Body.
+ * @param sprite The new sprite for the Body
  */
 void Body::setSprite(QImage img) {
-    std::cout << "setSprite: " << img.isNull() << std::endl;
+    //std::cout << "setSprite: " << img.isNull() << std::endl;
     if (sprite != nullptr) {
         delete sprite;
     }
     sprite = new QImage(img);
-    std::cout << "setSprite2: " << sprite->isNull() << std::endl;
+    //std::cout << "setSprite2: " << sprite->isNull() << std::endl;
 }
 
 /**
@@ -351,19 +384,23 @@ void Body::setSprite(QImage img) {
  */
 void Body::resizeSprite(Sprites sprites, double scale) {
     switch (type) {
-        case 0: // Star
-            setSprite(sprites.starImage.scaled(static_cast<int>(scale * diameter),
-                                               static_cast<int>(scale * diameter)));
-            break;
-        case 1: // Asteroid
+        case 0: // Asteroid
             setSprite(sprites.asteroidImage.scaled(static_cast<int>(scale * diameter),
                                                    static_cast<int>(scale * diameter)));
             break;
-        case 2: // White dwarf
+        case 1: // Planet
+            setSprite(sprites.getPlanetImage(planetType).scaled(static_cast<int>(scale * diameter),
+                                                                static_cast<int>(scale * diameter)));
+            break;
+        case 2: // Star
+            setSprite(sprites.starImage.scaled(static_cast<int>(scale * diameter),
+                                               static_cast<int>(scale * diameter)));
+            break;
+        case 3: // White dwarf
             setSprite(sprites.whitedwarfImage.scaled(static_cast<int>(scale * diameter),
                                                      static_cast<int>(scale * diameter)));
             break;
-        case 3: // Black hole
+        case 4: // Black hole
             setSprite(sprites.blackholeImage.scaled(static_cast<int>(scale * diameter),
                                                     static_cast<int>(scale * diameter)));
             break;

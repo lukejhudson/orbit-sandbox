@@ -35,11 +35,13 @@ public:
     void setVelY(double y);
     int getType();
     void setType(int t);
+    int getPlanetType();
+    void setPlanetType(int t);
     bool isActive();
     void setActive(bool b);
     void move(); // Add vel to pos
-    void combine(Body b); // Combine two bodies together
-    Body copy(); // Copies this Body
+    void combine(Body *b); // Combine two bodies together
+    Body* copy(); // Copies this Body
     std::string toString();
     bool operator==(const Body& b);
     QImage* getSprite();
@@ -52,6 +54,7 @@ private:
     Vector pos;
     Vector vel;
     int type; // What does the body represent? 0 = star, 1 = asteroid
+    int planetType; // Which planet sprite should the body (planet) have?
     bool active; // Should the body interact with other bodies?
     QImage *sprite = nullptr;
 };
