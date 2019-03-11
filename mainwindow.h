@@ -67,6 +67,10 @@ private:
     QVBoxLayout *vBlackholeLayout;
     QPushButton *blackholeButton;
     QLabel *blackholeLabel;
+    QWidget *plansysContainer;
+    QVBoxLayout *vPlansysLayout;
+    QPushButton *plansysButton;
+    QLabel *plansysLabel;
     QPushButton *sbHomeButton;
 
     // Create all components for the controls screen
@@ -85,7 +89,7 @@ private:
     QPushButton *csHomeButton;
 
 private slots:
-    void setSpawnType(int type);
+    void setSpawnType(Body::BodyType type);
 };
 
 #endif // MAINWINDOW_H

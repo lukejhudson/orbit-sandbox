@@ -29,6 +29,9 @@ Sprites::Sprites() {
 
     char blackholePath[] = "/sprites/blackhole.png";
     blackholeImage = loadImage(blackholePath);
+
+    char plansysPath[] = "/sprites/plansys.png";
+    plansysImage = loadImage(plansysPath);
 }
 
 /**

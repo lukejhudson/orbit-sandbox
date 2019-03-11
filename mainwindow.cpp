@@ -4,7 +4,7 @@
 MainWindow::MainWindow() {
     sprites = new Sprites();
     setWindowTitle("Orbit Sandbox");
-    resize(1000, 500);
+    resize(1000, 600);
     createMainMenu();
     sim = new Simulation(*sprites);
 }
@@ -71,7 +71,7 @@ void MainWindow::clearMainMenu() {
  * its components and puts them on the screen.
  */
 void MainWindow::createSandboxMode() {
-    simwin = new SimulationWindow(sim, *sprites);
+    simwin = new SimulationWindow(sim, *sprites, width() - 50, height());
 
     // SimulationWindow converted to a QWidget to place on the main window
     QWidget *simContainer = QWidget::createWindowContainer(simwin);
@@ -113,7 +113,7 @@ void MainWindow::createSandboxMode() {
     asteroidButton->setCheckable(true);
     asteroidButton->setChecked(true);
     // What happens when we press the button
-    connect(asteroidButton, &QPushButton::clicked, this, [=] {setSpawnType(0);});
+    connect(asteroidButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Asteroid);});
     // Asteroid label
     asteroidLabel = new QLabel("Asteroid");
     asteroidLabel->setAlignment(Qt::AlignCenter);
@@ -128,7 +128,7 @@ void MainWindow::createSandboxMode() {
     planetContainer = new QWidget;
     planetContainer->setFixedWidth(50);
     planetContainer->setToolTip("Select to spawn a planet:\nSmall, "
-                                  "low mass, low gravitational force");
+                                "low mass, low gravitational force");
     vPlanetLayout = new QVBoxLayout(planetContainer);
     vPlanetLayout->setMargin(0); // No border
     // Planet button
@@ -142,7 +142,7 @@ void MainWindow::createSandboxMode() {
     std::thread iconThread(&MainWindow::cyclePlanetIcons, this);
     iconThread.detach();
     // What happens when we press the button
-    connect(planetButton, &QPushButton::clicked, this, [=] {setSpawnType(1);});
+    connect(planetButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Planet);});
     // Planet label
     planetLabel = new QLabel("Planet");
     planetLabel->setAlignment(Qt::AlignCenter);
@@ -168,7 +168,7 @@ void MainWindow::createSandboxMode() {
     starButton->setPalette(QPalette(QColor(255,255,255)));
     starButton->setCheckable(true);
     starButton->setMinimumHeight(50);
-    connect(starButton, &QPushButton::clicked, this, [=] {setSpawnType(2);});
+    connect(starButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Star);});
     // Label
     starLabel = new QLabel("Star");
     starLabel->setAlignment(Qt::AlignCenter);
@@ -194,11 +194,12 @@ void MainWindow::createSandboxMode() {
     whitedwarfButton->setPalette(QPalette(QColor(255,255,255)));
     whitedwarfButton->setMinimumHeight(50);
     whitedwarfButton->setCheckable(true);
-    connect(whitedwarfButton, &QPushButton::clicked, this, [=] {setSpawnType(3);});
+    connect(whitedwarfButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::WhiteDwarf);});
     // Label
     whitedwarfLabel = new QLabel("White Dwarf");
     whitedwarfLabel->setWordWrap(true);
     whitedwarfLabel->setAlignment(Qt::AlignCenter);
+    whitedwarfLabel->setFixedHeight(25);
     // Combine
     vWhitedwarfLayout->addWidget(whitedwarfButton);
     vWhitedwarfLayout->addWidget(whitedwarfLabel);
@@ -221,7 +222,7 @@ void MainWindow::createSandboxMode() {
     blackholeButton->setPalette(QPalette(QColor(255,255,255)));
     blackholeButton->setMinimumHeight(50);
     blackholeButton->setCheckable(true);
-    connect(blackholeButton, &QPushButton::clicked, this, [=] {setSpawnType(4);});
+    connect(blackholeButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::BlackHole);});
     // Label
     blackholeLabel = new QLabel("Black Hole");
     blackholeLabel->setWordWrap(true);
@@ -231,6 +232,38 @@ void MainWindow::createSandboxMode() {
     vBlackholeLayout->addWidget(blackholeLabel);
     // Add to menu
     sbvLayout->addWidget(blackholeContainer, 0, Qt::AlignTop);
+
+    /* PLANETARY SYSTEM SELECTOR */
+    // Widget
+    plansysContainer = new QWidget;
+    plansysContainer->setFixedWidth(50);
+    plansysContainer->setToolTip("Select to spawn a planetary system:\nA random central "
+                                 "body surrounded by a number of randomly generated planets");
+    vPlansysLayout = new QVBoxLayout(plansysContainer);
+    vPlansysLayout->setMargin(0);
+    // Button
+    plansysButton = new QPushButton(sbContainer);
+    plansysButton->setIcon(QIcon(QDir::currentPath() + "/sprites/plansys.png"));
+    plansysButton->setIconSize(QSize(40, 40));
+    plansysButton->setAutoFillBackground(true);
+    plansysButton->setPalette(QPalette(QColor(255,255,255)));
+    plansysButton->setMinimumHeight(50);
+    plansysButton->setCheckable(true);
+    connect(plansysButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::PlanetarySystem);});
+    // Label
+    plansysLabel = new QLabel("Planetary System");
+    plansysLabel->setWordWrap(true);
+    plansysLabel->setAlignment(Qt::AlignCenter);
+    plansysLabel->setFixedHeight(25);
+    // Combine
+    vPlansysLayout->addWidget(plansysButton);
+    vPlansysLayout->addWidget(plansysLabel);
+    // Add to menu
+    sbvLayout->addWidget(plansysContainer, 0, Qt::AlignTop);
+
+    // Add stretch between last body selector and the home button
+    // Keeps the button spacing consistent and differentiates the home button
+    sbvLayout->addStretch();
 
     // Home button (back to main menu)
     sbHomeButton = new QPushButton(sbContainer);
@@ -330,37 +363,49 @@ void MainWindow::clearControlsScreen() {
  * unchecks all other buttons pressed.
  * @param type The type of body to spawn
  */
-void MainWindow::setSpawnType(int type) {
+void MainWindow::setSpawnType(Body::BodyType type) {
     switch (type) {
-        case 0: // Asteroid
+        case Body::Asteroid:
             planetButton->setChecked(false);
             starButton->setChecked(false);
             whitedwarfButton->setChecked(false);
             blackholeButton->setChecked(false);
+            plansysButton->setChecked(false);
             break;
-        case 1: // Planet
+        case Body::Planet:
             asteroidButton->setChecked(false);
             starButton->setChecked(false);
             whitedwarfButton->setChecked(false);
             blackholeButton->setChecked(false);
+            plansysButton->setChecked(false);
             break;
-        case 2: // Star
+        case Body::Star:
             asteroidButton->setChecked(false);
             planetButton->setChecked(false);
             whitedwarfButton->setChecked(false);
             blackholeButton->setChecked(false);
+            plansysButton->setChecked(false);
             break;
-        case 3: // White dwarf
+        case Body::WhiteDwarf:
             asteroidButton->setChecked(false);
             planetButton->setChecked(false);
             starButton->setChecked(false);
             blackholeButton->setChecked(false);
+            plansysButton->setChecked(false);
             break;
-        case 4: // Black hole
+        case Body::BlackHole:
             asteroidButton->setChecked(false);
             planetButton->setChecked(false);
             starButton->setChecked(false);
             whitedwarfButton->setChecked(false);
+            plansysButton->setChecked(false);
+            break;
+        case Body::PlanetarySystem:
+            asteroidButton->setChecked(false);
+            planetButton->setChecked(false);
+            starButton->setChecked(false);
+            whitedwarfButton->setChecked(false);
+            blackholeButton->setChecked(false);
             break;
     }
     simwin->setSpawnType(type);

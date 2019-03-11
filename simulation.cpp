@@ -5,8 +5,8 @@
 #include "simulation.h"
 #include "simulationwindow.h"
 
-// Gravitational constant
-#define G  0.3
+// Gravitational constant - Essentially controls the speed of the simulation
+#define G  0.005
 // #define G  6.67428E-11
 
 /**
@@ -16,7 +16,7 @@
 Simulation::Simulation(Sprites sprites) {
     this->sprites = sprites;
     // Add central star to list of bodies
-    resetSim();
+    // resetSim();
     std::cout << "Starting simulation... ";
     std::thread t(&Simulation::run, this);
     t.detach();
@@ -36,9 +36,155 @@ void Simulation::resetSim() {
     mut.unlock();
     bodies.erase(bodies.begin(), bodies.end());
     // Add default bodies
-    bodies.push_front(new Body(1000, 50, new Vector(250, 250), new Vector(0, 0), 2, sprites.starImage));
-    bodies.push_back(new Body(5, 5, new Vector(200, 200), new Vector(1, 0), 0, sprites.asteroidImage));
-    bodies.push_back(new Body(5, 5, new Vector(400, 400), new Vector(-2, 0), 0, sprites.asteroidImage));
+    scale = 1;
+    spawnPlanetarySystem(width / 2, height / 2, 0, 0);
+}
+
+/**
+ * @brief Simulation::spawnPlanetarySystem Spawns a planetary system with
+ * the centre being the given central body. A random number of planets
+ * are spawned in orbit of the given central body, with a random number
+ * of asteroids orbiting those planets.
+ * @param central The central body of the system
+ */
+void Simulation::spawnPlanetarySystem(Body* central) {
+    std::cout << "Spawning plan sys... " << central->getType();
+    double x = central->getX();
+    double y = central->getY();
+    double dx = central->getVelX();
+    double dy = central->getVelY();
+
+    // Generate between 2 and 5 planets around the central body
+    int numPlanets = 2 + std::rand() % 4;
+    int numAsteroids;
+    std::list<Body*> newPlanets;
+    std::list<Body*> newAsteroids;
+    Body *newPlanet;
+    Body *newAsteroid;
+    double newPX = 0, newPY = 0; // Planet x and y
+    double newAX = 0, newAY = 0; // Asteroid x and y
+    // Variables used to calculated starting velocity of planets and asteroids
+    double centralDiam = central->getDiameter();
+    double centralMass = central->getMass();
+    Vector centralPos = central->getPos(), planetPos;
+    double planetDiam, planetMass;
+    double vel, velX, velY, distX, distY;
+    double theta;
+
+    // Create new planets
+    for (int i = 0; i < numPlanets; i++) {
+        newPlanet = new Body(Body::Planet);
+        newPlanet->setSprite(sprites.getPlanetImage(newPlanet->getPlanetType()).scaled(static_cast<int>(scale * newPlanet->getDiameter()),
+                                                                                       static_cast<int>(scale * newPlanet->getDiameter())));
+        // Max distance should depend on central body?
+        // Longer for black hole since its gravitational pull is stronger --> Able to keep in orbit further?
+        newPX = x + std::rand() % 500 - 250;
+        newPY = y + std::rand() % 500 - 250;
+        // Centre of new planet must not overlap with the central body
+        // (and we want there to be at least a little bit of space between)
+        while (pow(newPX - x, 2) + pow(newPY - y, 2) < pow(centralDiam, 2)) {
+            newPX = x + std::rand() % 500 - 250;
+            newPY = y + std::rand() % 500 - 250;
+        }
+        newPlanet->setPos(newPX, newPY);
+        planetPos = newPlanet->getPos();
+        // Calculate velocity of planet
+        // v = sqrt( (G * centralMass) / radius of orbit )
+        vel = std::sqrt((G * centralMass) / centralPos.distance(planetPos));
+        distX = newPX - centralPos.getX();
+        distY = newPY - centralPos.getY();
+        // Use trig to find the magnitude of the velocity in the x and y directions
+        // theta = tan^-1 (|distY| / |distX|)
+        theta = std::tanh(distY / distX);
+        // velX = vel * sin(theta)
+        velX = vel * std::sin(theta);
+        // velY = vel * cos(theta)
+        velY = vel * std::cos(theta);
+        // Flip one of velX or velY to make them go in the correct direction
+        // (but we don't mind whether they're going clockwise or anticlockwise)
+        if (std::rand() % 2 == 0) {
+            velX = -velX;
+        } else {
+            velY = -velY;
+        }
+        //std::cout << "dist: " << centralPos.distance(newPlanet->getPos()) << " (" << distX << ", " << distY << ")" << std::endl;
+        //std::cout << "vel: " << vel << " (" << velX << ", " << velY << ")" << std::endl;
+        newPlanet->setVel(dx + velX, dy + velY);
+        newPlanets.push_back(newPlanet);
+
+        // Generate between 0 and 5 asteroids for this planet
+        numAsteroids = std::rand() % 6;
+        planetDiam = newPlanet->getDiameter();
+        planetMass = newPlanet->getMass();
+        for (int j = 0; j < numAsteroids; j++) {
+            newAsteroid = new Body(Body::Asteroid);
+            newAsteroid->setSprite(sprites.asteroidImage.scaled(static_cast<int>(scale * newAsteroid->getDiameter()),
+                                                                static_cast<int>(scale * newAsteroid->getDiameter())));
+            newAX = newPX + std::rand() % 40 - 20;
+            newAY = newPY + std::rand() % 40 - 20;
+            // Centre of new asteroid must not overlap with the planet it orbits
+            // (and we want there to be at least a little bit of space between)
+            while (pow(newAX - newPX, 2) + pow(newAY - newPX, 2) < pow(planetDiam, 2)) {
+                newAX = newPX + std::rand() % 40 - 20;
+                newAY = newPY + std::rand() % 40 - 20;
+            }
+            newAsteroid->setPos(newAX, newAY);
+            // Calculate velocity of asteroid orbiting planet
+            // v = sqrt( (G * planetMass) / radius of orbit )
+            vel = std::sqrt((G * planetMass) / planetPos.distance(newAsteroid->getPos()));
+            distX = newAX - planetPos.getX();
+            distY = newAY - planetPos.getY();
+            // Use trig to find the magnitude of the velocity in the x and y directions
+            // theta = tan^-1 (|distY| / |distX|)
+            theta = std::tanh(distY / distX);
+            // velX = vel * sin(theta)
+            velX = vel * std::sin(theta);
+            // velY = vel * cos(theta)
+            velY = vel * std::cos(theta);
+            // Flip one of velX or velY to make them go in the correct direction
+            // (but we don't mind whether they're going clockwise or anticlockwise)
+            if (std::rand() % 2 == 0) {
+                velX = -velX;
+            } else {
+                velY = -velY;
+            }
+            //std::cout << "dist: " << centralPos.distance(newPlanet->getPos()) << " (" << distX << ", " << distY << ")" << std::endl;
+            //std::cout << "vel: " << vel << " (" << velX << ", " << velY << ")" << std::endl;
+            newAsteroid->setVel(newPlanet->getVelX() + velX, newPlanet->getVelY() + velY);
+            newAsteroids.push_back(newAsteroid);
+        }
+    }
+    // Add bodies to simulation
+    mut.lock();
+    bodies.push_back(central);
+    for (std::list<Body*>::iterator iter = newPlanets.begin(); iter != newPlanets.end(); ++iter) {
+        bodies.push_back(*iter);
+    }
+    for (std::list<Body*>::iterator iter = newAsteroids.begin(); iter != newAsteroids.end(); ++iter) {
+        bodies.push_back(*iter);
+    }
+    mut.unlock();
+    std::cout << " Spawning complete" << std::endl;
+}
+
+/**
+ * @brief Simulation::spawnPlanetarySystem Spawns a planetary system with
+ * the centre at the given (x, y) coordinates and a velocity of (dx, dy).
+ * The central celestial body is randomly chosen between a star, dwarf star
+ * or black hole. A random number of planets are then spawned in orbit
+ * around this body, with a random number of asteroids orbiting those planets.
+ * @param x x-coordinate of the centre of the planetary system
+ * @param y y-coordinate of the centre of the planetary system
+ * @param dx x velocity of the planetary system
+ * @param dy y velocity of the planetary system
+ */
+void Simulation::spawnPlanetarySystem(double x, double y, double dx, double dy) {
+    // Central body - Type 2 (star), 3 (dwarf star) or 4 (black hole)
+    Body *central = new Body(static_cast<Body::BodyType>(2 + std::rand() % 3));
+    central->setPos(x, y);
+    central->setVel(dx, dy);
+
+    spawnPlanetarySystem(central);
 }
 
 /**
@@ -100,7 +246,7 @@ void Simulation::run() {
                         } else {
                             // Calculate gravitational force exerted on body and update velocity
                             // vel += (G * mass2 * (pos2 - pos 1)) / (dist ^ 3)
-                            // vel += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
+                            //     += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
                             //std::cout << "vel before: " << (*iter1)->getVel().toString();
                             double dist = (*iter2)->getPos().distance((*iter1)->getPos());
                             if (dist < 1) dist = 1;
@@ -133,7 +279,7 @@ void Simulation::run() {
             }
         }
         // Sleep to maintain ~60 ticks per second
-        std::this_thread::sleep_for(std::chrono::milliseconds(17));
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 
@@ -145,23 +291,23 @@ void Simulation::setSprites(double s) {
     scale = s;
     for (std::list<Body*>::iterator iter = bodies.begin(); iter != bodies.end(); ++iter) {
         switch ((*iter)->getType()) {
-            case 0: // Asteroid
+            case Body::Asteroid:
                 (*iter)->setSprite(sprites.asteroidImage.scaled(static_cast<int>(scale * (*iter)->getDiameter()),
                                                                 static_cast<int>(scale * (*iter)->getDiameter())));
                 break;
-            case 1: // Planet
+            case Body::Planet:
                 (*iter)->setSprite(sprites.getPlanetImage((*iter)->getPlanetType()).scaled(static_cast<int>(scale * (*iter)->getDiameter()),
                                                                                            static_cast<int>(scale * (*iter)->getDiameter())));
                 break;
-            case 2: // Star
+            case Body::Star:
                 (*iter)->setSprite(sprites.starImage.scaled(static_cast<int>(scale * (*iter)->getDiameter()),
                                                             static_cast<int>(scale * (*iter)->getDiameter())));
                 break;
-            case 3: // White dwarf
+            case Body::WhiteDwarf:
                 (*iter)->setSprite(sprites.whitedwarfImage.scaled(static_cast<int>(scale * (*iter)->getDiameter()),
                                                                   static_cast<int>(scale * (*iter)->getDiameter())));
                 break;
-            case 4: // Black hole
+            case Body::BlackHole:
                 (*iter)->setSprite(sprites.blackholeImage.scaled(static_cast<int>(scale * (*iter)->getDiameter()),
                                                                  static_cast<int>(scale * (*iter)->getDiameter())));
                 break;
@@ -177,7 +323,21 @@ void Simulation::setPaused(bool b) {
     paused = b;
 }
 
+/**
+ * @brief Simulation::setWidth Sets the width of the visiable region to w.
+ * @param w The width of the visible region
+ */
+void Simulation::setWidth(double w) {
+    width = w;
+}
 
+/**
+ * @brief Simulation::setHeight Sets the height of the visible region to h.
+ * @param h The height of the visible region
+ */
+void Simulation::setHeight(double h) {
+    height = h;
+}
 
 
 

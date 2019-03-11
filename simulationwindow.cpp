@@ -9,7 +9,9 @@
  * window and begins displaying the bodies in the given Simulation.
  * @param sim The simulation to display in the window
  */
-SimulationWindow::SimulationWindow(Simulation *sim, Sprites sprites) {
+SimulationWindow::SimulationWindow(Simulation *sim, Sprites sprites, double width, double height) {
+    m_backingStore = new QBackingStore(this);
+
     this->sim = sim;
     spawning = false;
     initialMousePos = new Vector();
@@ -23,10 +25,68 @@ SimulationWindow::SimulationWindow(Simulation *sim, Sprites sprites) {
 
     this->sprites = sprites;
 
+    sim->setWidth(width);
+    sim->setHeight(height);
+    sim->resetSim();
     sim->setSprites(scale);
 
     // Start a timer to be used to render at 60 fps
     m_timerId = startTimer(1000/60);
+}
+
+/**
+ * @brief SimulationWindow::event Handles all the different possible events.
+ * @param event The event to handle
+ * @return True if the event has been handled
+ */
+bool SimulationWindow::event(QEvent *event) {
+    // Handle update event
+    if (event->type() == QEvent::UpdateRequest) {
+        // Render window
+        renderNow();
+        return true;
+    }
+    // Make sure the rest of events are handled
+    return QWindow::event(event);
+}
+
+/**
+ * @brief RasterWindow::renderLater Don't need to render immediately, so
+ * instead request for an update when the system is ready to repaint.
+ */
+void SimulationWindow::renderLater() {
+    requestUpdate();
+}
+
+/**
+ * @brief RasterWindow::resizeEvent The resize event is guaranteed to
+ * be called prior to the window being shown on screen and will also
+ * be called whenever the window is resized while on screen. We use this
+ * to resize the back buffer, and defer rendering to the corresponding/
+ * following expose event.
+ * @param resizeEvent The resize event
+ */
+void SimulationWindow::resizeEvent(QResizeEvent *resizeEvent) {
+    m_backingStore->resize(resizeEvent->size());
+    sim->setWidth(width());
+    sim->setHeight(height());
+    // Adjust camera so that the centre remains in the middle of the screen
+    double dx = width() - resizeEvent->oldSize().width();
+    double dy = height() - resizeEvent->oldSize().height();
+
+    currentOffsetX -= (dx / 2) / scale;
+    currentOffsetY -= (dy / 2) / scale;
+}
+
+/**
+ * @brief RasterWindow::exposeEvent Called after the window is set to be
+ * shown (window.show(); in main) to notify us that the window's exposure
+ * in the windowing system has changed.
+ * (Also called when the window becomes obscured)
+ */
+void SimulationWindow::exposeEvent(QExposeEvent *) {
+    if (isExposed()) // Is the window showing?
+        renderNow(); // Yes --> Draw immediately
 }
 
 /**
@@ -49,45 +109,54 @@ void SimulationWindow::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         // Left click
         //std::cout << "Left click: " << event->x() << ", " << event->y() << std::endl;
+
+        // Flag to swap spawnType back after the switch statement
+        bool spawningPlanetarySystem = false;
+        if (spawnType == Body::PlanetarySystem) {
+            // Randomly choose type for the central body of the planetary system
+            // (star, dwarf star or black hole)
+            spawnType = static_cast<Body::BodyType>(2 + std::rand() % 3);
+            spawningPlanetarySystem = true;
+        }
         // Create the body of the specified type
         newBody = new Body(spawnType);
         newBody->setPos(event->x() / scale + currentOffsetX,
                         event->y() / scale + currentOffsetY);
         // Set the body's sprite based on its type
         switch (spawnType) {
-            case 0: // Asteroid
+            default:
+            case Body::Asteroid:
                 newBody->setSprite(sprites.asteroidImage.scaled(static_cast<int>(scale * newBody->getDiameter()),
                                                                 static_cast<int>(scale * newBody->getDiameter())));
                 break;
-            case 1: // Planet
-                newBody->setPlanetType(std::rand() % 5 + 1); // Random from 1 to 5
+            case Body::Planet:
                 newBody->setSprite(sprites.getPlanetImage(newBody->getPlanetType()).scaled(static_cast<int>(scale * newBody->getDiameter()),
                                                                                            static_cast<int>(scale * newBody->getDiameter())));
                 break;
-            case 2: // Star
+            case Body::Star:
                 newBody->setSprite(sprites.starImage.scaled(static_cast<int>(scale * newBody->getDiameter()),
                                                             static_cast<int>(scale * newBody->getDiameter())));
                 break;
-            case 3: // White dwarf
+            case Body::WhiteDwarf:
                 newBody->setSprite(sprites.whitedwarfImage.scaled(static_cast<int>(scale * newBody->getDiameter()),
                                                                   static_cast<int>(scale * newBody->getDiameter())));
                 break;
-            case 4: // Black hole
+            case Body::BlackHole:
                 newBody->setSprite(sprites.blackholeImage.scaled(static_cast<int>(scale * newBody->getDiameter()),
                                                                  static_cast<int>(scale * newBody->getDiameter())));
                 break;
         }
+        if (spawningPlanetarySystem) {
+            spawnType = Body::PlanetarySystem;
+        }
         //std::cout << "Spawning: " << newBody->getX() << ", " << newBody->getY() << std::endl;
         // Store location of click
-        mousePos.setX(event->x() / scale);
-        mousePos.setY(event->y() / scale);
+        mousePos.set(event->x() / scale, event->y() / scale);
         spawning = true;
     } else if (event->button() == Qt::MiddleButton) {
         // Adjust window offset so that screen can be moved around
-        mousePos.setX(event->x() / scale);
-        mousePos.setY(event->y() / scale);
-        initialMousePos.setX(event->x() / scale);
-        initialMousePos.setY(event->y() / scale);
+        mousePos.set(event->x() / scale, event->y() / scale);
+        initialMousePos.set(event->x() / scale, event->y() / scale);
         movingCamera = true;
     } else {
         // Pass on other buttons to base class
@@ -107,9 +176,14 @@ void SimulationWindow::mouseReleaseEvent(QMouseEvent *event) {
         if (spawning) {
             //std::cout << "Release left click: " << event->x() << ", " << event->y() << std::endl;
             spawning = false;
-            newBody->setVelX(0.1 * (newBody->getX() - (event->x() / scale) - currentOffsetX));
-            newBody->setVelY(0.1 * (newBody->getY() - (event->y() / scale) - currentOffsetY));
-            sim->addBody(newBody);
+            double vx = 0.1 * (newBody->getX() - (event->x() / scale) - currentOffsetX);
+            double vy = 0.1 * (newBody->getY() - (event->y() / scale) - currentOffsetY);
+            newBody->setVel(vx, vy);
+            if (spawnType != Body::PlanetarySystem) {
+                sim->addBody(newBody);
+            } else {
+                sim->spawnPlanetarySystem(newBody);
+            }
         }
     } else if (event->button() == Qt::MiddleButton) {
         movingCamera = false;
@@ -137,8 +211,8 @@ void SimulationWindow::mouseMoveEvent(QMouseEvent *event) {
     } else if (movingCamera) {
         mousePos.setX(event->x() / scale);
         mousePos.setY(event->y() / scale);
-        newOffsetX = static_cast<int>(initialMousePos.getX() - mousePos.getX());
-        newOffsetY = static_cast<int>(initialMousePos.getY() - mousePos.getY());
+        newOffsetX = initialMousePos.getX() - mousePos.getX();
+        newOffsetY = initialMousePos.getY() - mousePos.getY();
     } else {
         // Pass on other buttons to base class
         QWindow::mouseMoveEvent(event);
@@ -236,12 +310,37 @@ void SimulationWindow::render(QPainter *p) {
     //std::cout << "Render end" << std::endl;
 }
 
+void SimulationWindow::renderNow() {
+    if (!isExposed())
+        return; // Not showing --> Don't bother rendering
+
+    // Area we want to paint
+    QRect rect(0, 0, width(), height());
+    // Paint area
+    m_backingStore->beginPaint(rect);
+
+    // Get the QPaintDevice of the back buffer
+    QPaintDevice *device = m_backingStore->paintDevice();
+    // Creae a QPainter to render to the paint device
+    QPainter painter(device);
+
+    // Draw the gradient background on the window
+    painter.fillRect(0, 0, width(), height(), QColor(0, 0, 0));
+    render(&painter);
+    painter.end();
+
+    // Done rendering
+    m_backingStore->endPaint();
+    // Present the contents in the back buffer
+    m_backingStore->flush(rect);
+}
+
 /**
  * @brief SimulationWindow::setSpawnType Sets the type of body
  * that will spawn when the user clicks and drags the mouse.
- * @param type The type of body to spawn
+ * @param type The type of body to spawn (see Body::BodyType)
  */
-void SimulationWindow::setSpawnType(int type) {
+void SimulationWindow::setSpawnType(Body::BodyType type) {
     spawnType = type;
 }
 

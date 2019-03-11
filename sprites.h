@@ -17,6 +17,7 @@ public:
     QImage starImage;
     QImage whitedwarfImage;
     QImage blackholeImage;
+    QImage plansysImage;
 
 private:
     QImage loadImage(char path[]);

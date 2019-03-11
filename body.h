@@ -10,11 +10,22 @@
  * Class for a generic body such as an asteroid or star.
  */
 class Body {
+
 public:
+
+    enum BodyType {
+        Asteroid = 0,
+        Planet = 1,
+        Star = 2,
+        WhiteDwarf = 3,
+        BlackHole = 4,
+        PlanetarySystem = 5
+    };
+
     Body();
-    Body(double mass, double diam, Vector pos, Vector vel, int type);
-    Body(double mass, double diam, Vector pos, Vector vel, int type, QImage img);
-    Body(int type);
+    Body(double mass, double diam, Vector pos, Vector vel, BodyType);
+    Body(double mass, double diam, Vector pos, Vector vel, BodyType, QImage img);
+    Body(BodyType);
     double getMass();
     void setMass(double m);
     double getDiameter();
@@ -34,7 +45,7 @@ public:
     void setVelX(double x);
     void setVelY(double y);
     int getType();
-    void setType(int t);
+    void setType(BodyType);
     int getPlanetType();
     void setPlanetType(int t);
     bool isActive();
@@ -53,7 +64,7 @@ private:
     double diameter;
     Vector pos;
     Vector vel;
-    int type; // What does the body represent? 0 = star, 1 = asteroid
+    BodyType type; // What does the body represent?
     int planetType; // Which planet sprite should the body (planet) have?
     bool active; // Should the body interact with other bodies?
     QImage *sprite = nullptr;
