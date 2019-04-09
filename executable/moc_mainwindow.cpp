@@ -21,8 +21,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_MainWindow_t {
-    QByteArrayData data[4];
-    char stringdata0[30];
+    QByteArrayData data[5];
+    char stringdata0[45];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -34,10 +34,12 @@ static const qt_meta_stringdata_MainWindow_t qt_meta_stringdata_MainWindow = {
 QT_MOC_LITERAL(0, 0, 10), // "MainWindow"
 QT_MOC_LITERAL(1, 11, 12), // "setSpawnType"
 QT_MOC_LITERAL(2, 24, 0), // ""
-QT_MOC_LITERAL(3, 25, 4) // "type"
+QT_MOC_LITERAL(3, 25, 14), // "Body::BodyType"
+QT_MOC_LITERAL(4, 40, 4) // "type"
 
     },
-    "MainWindow\0setSpawnType\0\0type"
+    "MainWindow\0setSpawnType\0\0Body::BodyType\0"
+    "type"
 };
 #undef QT_MOC_LITERAL
 
@@ -58,7 +60,7 @@ static const uint qt_meta_data_MainWindow[] = {
        1,    1,   19,    2, 0x08 /* Private */,
 
  // slots: parameters
-    QMetaType::Void, QMetaType::Int,    3,
+    QMetaType::Void, 0x80000000 | 3,    4,
 
        0        // eod
 };
@@ -69,7 +71,7 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         MainWindow *_t = static_cast<MainWindow *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
-        case 0: _t->setSpawnType((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 0: _t->setSpawnType((*reinterpret_cast< Body::BodyType(*)>(_a[1]))); break;
         default: ;
         }
     }

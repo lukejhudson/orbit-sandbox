@@ -1,10 +1,9 @@
 #ifndef BODY_H
 #define BODY_H
 
-#include <QtGui>
 #include <string>
+#include <QRect>
 #include "vector.h"
-#include "sprites.h"
 
 /*
  * Class for a generic body such as an asteroid or star.
@@ -19,13 +18,15 @@ public:
         Star = 2,
         WhiteDwarf = 3,
         BlackHole = 4,
-        PlanetarySystem = 5
+        PlanetarySystem = 5,
+        PlayerRocket = 6
     };
 
     Body();
-    Body(double mass, double diam, Vector pos, Vector vel, BodyType);
-    Body(double mass, double diam, Vector pos, Vector vel, BodyType, QImage img);
+    Body(double mass, double diam, Vector pos, Vector vel, BodyType type, int planetType);
     Body(BodyType);
+    virtual ~Body();
+
     double getMass();
     void setMass(double m);
     double getDiameter();
@@ -55,19 +56,18 @@ public:
     Body* copy(); // Copies this Body
     std::string toString();
     bool operator==(const Body& b);
-    QImage* getSprite();
-    void setSprite(QImage img);
-    void resizeSprite(Sprites sprites, double scale);
+    bool isWithin(QRect rect);
 
-private:
+protected:
     double mass;
     double diameter;
     Vector pos;
     Vector vel;
     BodyType type; // What does the body represent?
-    int planetType; // Which planet sprite should the body (planet) have?
     bool active; // Should the body interact with other bodies?
-    QImage *sprite = nullptr;
+
+private:
+    int planetType; // Which planet sprite should the body (planet) have?
 };
 
 #endif // BODY_H

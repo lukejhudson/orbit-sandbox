@@ -2,25 +2,36 @@
 #define SPRITES_H
 
 #include <QtGui>
+#include "body.h"
+#include "rocket.h"
 
 class Sprites {
 public:
     Sprites();
-    QImage getPlanetImage(int t);
+    QPixmap getImage(Body* b);
+    QPixmap getSpriteSheetImage(QPixmap spriteSheet, int width, int height, int n, int spriteWidth, int spriteHeight);
 
-    QImage asteroidImage;
-    QImage planet1Image;
-    QImage planet2Image;
-    QImage planet3Image;
-    QImage planet4Image;
-    QImage planet5Image;
-    QImage starImage;
-    QImage whitedwarfImage;
-    QImage blackholeImage;
-    QImage plansysImage;
+    QPixmap invalidImage;
+    QPixmap backgroundImage;
+
+    QPixmap asteroidImage;
+    QPixmap planet1Image;
+    QPixmap planet2Image;
+    QPixmap planet3Image;
+    QPixmap planet4Image;
+    QPixmap planet5Image;
+    QPixmap starImage;
+    QPixmap whitedwarfImage;
+    QPixmap blackholeImage;
+    QPixmap plansysImage;
+
+    QPixmap rocketIdleImage;
+    QPixmap rocketFiringImage;
+    QPixmap rocketExplosionSpriteSheet;
 
 private:
-    QImage loadImage(char path[]);
+    QPixmap loadImage(char path[]);
+    QPixmap getPlanetImage(int t);
 };
 
 #endif // SPRITES_H

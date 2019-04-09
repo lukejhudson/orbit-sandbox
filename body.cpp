@@ -1,5 +1,5 @@
 #include <string>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include "body.h"
 
@@ -23,41 +23,24 @@ Body::Body() {
  * @param vel Velocity Vector of body
  * @param type Type of body (see Body::BodyType)
  */
-Body::Body(double mass, double diam, Vector pos, Vector vel, BodyType type) {
+Body::Body(double mass, double diam, Vector pos, Vector vel, BodyType type, int planetType) {
     this->mass = mass;
     this->diameter = diam;
     this->pos = pos;
     this->vel = vel;
     this->type = type;
-    active = true;
-}
-
-/**
- * @brief Body::Body Initialises variables to specified values, including the body's sprite.
- * @param mass Mass of body
- * @param diam Diameter of body
- * @param pos Position Vector of body
- * @param vel Velocity Vector of body
- * @param type Type of body (see Body::BodyType)
- * @param img The body's sprite
- */
-Body::Body(double mass, double diam, Vector pos, Vector vel, BodyType type, QImage img) {
-    this->mass = mass;
-    this->diameter = diam;
-    this->pos = pos;
-    this->vel = vel;
-    this->type = type;
-    setSprite(img);
+    this->planetType = planetType;
     active = true;
 }
 
 /**
  * @brief Body::Body Initialises variable to generic values for the specified type.
- * @param type Type of body (0 = asteroid, 1 = planet, 2 = star, 3 = white dwarf, 4 = black hole)
+ * @param type Type of body
  */
 Body::Body(BodyType type) {
     // Specific mass and diameter for each type
     int rand;
+    planetType = 0;
     switch (type) {
         default:
         case Asteroid:
@@ -99,6 +82,8 @@ Body::Body(BodyType type) {
     this->type = type;
     active = true;
 }
+
+Body::~Body() {}
 
 /**
  * @brief Body::getMass
@@ -334,7 +319,7 @@ void Body::combine(Body *b) {
  * @return A copy of this Body
  */
 Body* Body::copy() {
-    return new Body(mass, diameter, pos.copy(), vel.copy(), type, *sprite);
+    return new Body(mass, diameter, pos.copy(), vel.copy(), type, planetType);
 }
 
 /**
@@ -358,58 +343,22 @@ bool Body::operator==(const Body& rhs) {
 }
 
 /**
- * @brief Body::getSprite Returns this Body's sprite.
- * @return This Body's sprite
+ * @brief Body::isWithin Returns true if any part of the Body is within
+ * the given area.
+ * @param v The Vector representing the top left of the area
+ * @param width The width of the area
+ * @param height The height of the area
+ * @return True if the Body is within the area
  */
-QImage* Body::getSprite() {
-    //std::cout << "getSprite: " << sprite->isNull() << std::endl;
-    return sprite;
-}
+bool Body::isWithin(QRect rect) {
+    double radius = diameter / 2.0;
+    double posX = pos.getX(), posY = pos.getY();
 
-/**
- * @brief Body::setSprite Sets this Body's sprite.
- * @param sprite The new sprite for the Body
- */
-void Body::setSprite(QImage img) {
-    //std::cout << "setSprite: " << img.isNull() << std::endl;
-    if (sprite != nullptr) {
-        delete sprite;
-    }
-    sprite = new QImage(img);
-    //std::cout << "setSprite2: " << sprite->isNull() << std::endl;
+    return (posX + radius >= rect.x()
+            && posX - radius <= rect.x() + rect.width()
+            && posY + radius >= rect.y()
+            && posY - radius <= rect.y() + rect.height());
 }
-
-/**
- * @brief Body::resizeSprite
- * @param sprites
- * @param scale
- */
-void Body::resizeSprite(Sprites sprites, double scale) {
-    switch (type) {
-        default:
-        case Asteroid:
-            setSprite(sprites.asteroidImage.scaled(static_cast<int>(scale * diameter),
-                                                   static_cast<int>(scale * diameter)));
-            break;
-        case Planet:
-            setSprite(sprites.getPlanetImage(planetType).scaled(static_cast<int>(scale * diameter),
-                                                                static_cast<int>(scale * diameter)));
-            break;
-        case Star:
-            setSprite(sprites.starImage.scaled(static_cast<int>(scale * diameter),
-                                               static_cast<int>(scale * diameter)));
-            break;
-        case WhiteDwarf:
-            setSprite(sprites.whitedwarfImage.scaled(static_cast<int>(scale * diameter),
-                                                     static_cast<int>(scale * diameter)));
-            break;
-        case BlackHole:
-            setSprite(sprites.blackholeImage.scaled(static_cast<int>(scale * diameter),
-                                                    static_cast<int>(scale * diameter)));
-            break;
-    }
-}
-
 
 
 

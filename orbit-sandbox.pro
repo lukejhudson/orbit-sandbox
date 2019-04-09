@@ -31,9 +31,10 @@ SOURCES += \
     body.cpp \
     vector.cpp \
     simulation.cpp \
-    simulationwindow.cpp \
     sprites.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    simulationwidget.cpp \
+    rocket.cpp
 
 HEADERS += \
     rasterwindow.h \
@@ -41,9 +42,10 @@ HEADERS += \
     body.h \
     vector.h \
     simulation.h \
-    simulationwindow.h \
     sprites.h \
-    mainwindow.h
+    mainwindow.h \
+    simulationwidget.h \
+    rocket.h
 
 FORMS += \
     rasterwindow.ui

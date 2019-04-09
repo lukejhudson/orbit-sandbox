@@ -1,7 +1,7 @@
 #include <QtWidgets/QApplication>
 #include "rasterwindow.h"
 #include "analogclockwindow.h"
-#include "simulationwindow.h"
+#include "simulationwidget.h"
 #include "sprites.h"
 #include "simulation.h"
 #include "mainwindow.h"
@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
 
     // RasterWindow window; // Initialise class
     //AnalogClockWindow window;
-    //SimulationWindow *window = new SimulationWindow(&sim, sprites);
     MainWindow *window = new MainWindow();
     window->show(); // Make window visible
 

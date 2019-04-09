@@ -1,12 +1,18 @@
 #include <iostream>
 #include "mainwindow.h"
 
+#define TITLE_STYLE "\"font-family:Sans Serif; font-size:70pt;\""
+#define BUTTON_STYLE "QPushButton {background-color: #4f5154; color: white;}"
+
 MainWindow::MainWindow() {
     sprites = new Sprites();
     setWindowTitle("Orbit Sandbox");
     resize(1000, 600);
-    createMainMenu();
+    setMinimumSize(1000, 600);
+
     sim = new Simulation(*sprites);
+
+    createMainMenu();
 }
 
 /**
@@ -14,38 +20,65 @@ MainWindow::MainWindow() {
  * its components and puts them on the screen.
  */
 void MainWindow::createMainMenu() {
-    // Container widget for whole main menu
+    mode = MainMenu;
+    sim->setMode(Simulation::Background);
+    // Container widget for whole main menu, including the simulation background
     mmContainer = new QWidget;
-    mmContainer->setAutoFillBackground(true);
+    mmContainer->setAutoFillBackground(false);
     mmContainer->setPalette(QPalette(QColor(50,50,50)));
-    // Add contents vertically
-    mmvLayout = new QVBoxLayout(mmContainer);
 
     // Puts the main menu onto the screen
     setCentralWidget(mmContainer);
 
+    // Create simulation widget to have a basic simulation going on in the background
+    simWidget = new SimulationWidget(sim, *sprites);
+    // Set its parent to the main menu container (i.e. adds it)
+    simWidget->setParent(mmContainer);
+    simWidget->setGeometry(0, 0, width(), height());
+    // Reduce opacity so the focus remains on the main menu
+    QGraphicsOpacityEffect *effect = new QGraphicsOpacityEffect;
+    effect->setOpacity(0.8);
+    simWidget->setGraphicsEffect(effect);
+    sim->setPaused(false);
+
+    // Add contents vertically
+    mmvLayout = new QVBoxLayout(mmContainer);
+
     // Main menu title
-    title = new QLabel("<p style=\"font-family:Sans Serif; font-size:70pt;\"><b>Orbit Sandbox</b></p>");
+    title = new QLabel("<p style=" TITLE_STYLE "><b>Orbit Sandbox</b></p>");
     mmvLayout->addWidget(title, 0, Qt::AlignCenter);
     // Credits
     credits = new QLabel("<h3>By Luke Hudson</h3>");
     mmvLayout->addWidget(credits, 0, Qt::AlignCenter);
     // Button to enter sandbox mode
-    sandboxModeButton = new QPushButton("Sandbox Mode", mmContainer);
+    sandboxModeButton = new QPushButton("Sandbox Mode");
     QFont f("Fantasy", 15, QFont::Bold);
     sandboxModeButton->setFont(f);
-    sandboxModeButton->setStyleSheet("QPushButton {background-color: #4f5154; color: white;}");
+    sandboxModeButton->setStyleSheet(BUTTON_STYLE);
     sandboxModeButton->setFixedWidth(200);
     connect(sandboxModeButton, &QPushButton::clicked, this, [=]{
+        sim->setPaused(true);
         createSandboxMode();
         clearMainMenu();
     });
     mmvLayout->addWidget(sandboxModeButton, 0, Qt::AlignCenter);
 
+    // Button to enter exploration mode
+    explorationModeButton = new QPushButton("Exploration Mode");
+    explorationModeButton->setFont(f);
+    explorationModeButton->setStyleSheet(BUTTON_STYLE);
+    explorationModeButton->setFixedWidth(200);
+    connect(explorationModeButton, &QPushButton::clicked, this, [=]{
+        sim->setPaused(true);
+        createExplorationMode();
+        clearMainMenu();
+    });
+    mmvLayout->addWidget(explorationModeButton, 0, Qt::AlignCenter);
+
     // Button to enter controls screen
-    controlsScreenButton = new QPushButton("Controls", mmContainer);
+    controlsScreenButton = new QPushButton("Controls");
     controlsScreenButton->setFont(f);
-    controlsScreenButton->setStyleSheet("QPushButton {background-color: #4f5154; color: white;}");
+    controlsScreenButton->setStyleSheet(BUTTON_STYLE);
     controlsScreenButton->setFixedWidth(200);
     connect(controlsScreenButton, &QPushButton::clicked, this, [=]{
         createControlsScreen();
@@ -61,6 +94,7 @@ void MainWindow::createMainMenu() {
 
 /**
  * @brief MainWindow::clearMainMenu Deletes the main menu components.
+ * Deleting the top-level component deletes all of its child components.
  */
 void MainWindow::clearMainMenu() {
     delete mmContainer;
@@ -71,10 +105,10 @@ void MainWindow::clearMainMenu() {
  * its components and puts them on the screen.
  */
 void MainWindow::createSandboxMode() {
-    simwin = new SimulationWindow(sim, *sprites, width() - 50, height());
-
-    // SimulationWindow converted to a QWidget to place on the main window
-    QWidget *simContainer = QWidget::createWindowContainer(simwin);
+    mode = Sandbox;
+    sim->setMode(Simulation::Sandbox);
+    // Create simulation widget
+    simWidget = new SimulationWidget(sim, *sprites);
     // Container for everything on the screen, including the simulation window and the control bar
     sbContainer = new QWidget;
     sbContainer->setAutoFillBackground(true);
@@ -83,7 +117,7 @@ void MainWindow::createSandboxMode() {
     setCentralWidget(sbContainer);
 
     sbhLayout = new QHBoxLayout(sbContainer);
-    sbhLayout->addWidget(simContainer, 0);
+    sbhLayout->addWidget(simWidget, 0);
     sbhLayout->setMargin(5); // Border around all components
     sbvLayout = new QVBoxLayout();
     sbhLayout->addLayout(sbvLayout);
@@ -277,6 +311,7 @@ void MainWindow::createSandboxMode() {
     });
     sbvLayout->addWidget(sbHomeButton, 0, Qt::AlignBottom);
 
+    // Start the simulation
     sim->setPaused(false);
 }
 
@@ -284,9 +319,80 @@ void MainWindow::createSandboxMode() {
  * @brief MainWindow::clearSandboxMode Deletes the sandbox mode components.
  */
 void MainWindow::clearSandboxMode() {
+    // Stop cycling icons on the planet button so the thread finishes
     iconCycleRunning = false;
-    sim->resetSim();
     delete sbContainer;
+}
+
+/**
+ * @brief MainWindow::createExplorationMode Creates the exploration game
+ * mode and its components and puts them on the screen.
+ */
+void MainWindow::createExplorationMode() {
+    mode = Exploration;
+    sim->setMode(Simulation::Exploration);
+    simWidget = new SimulationWidget(sim, *sprites);
+    // Container for everything on the screen - simulation and home button
+    exContainer = simWidget;
+    exContainer->setAutoFillBackground(true);
+    exContainer->setPalette(QPalette(QColor(50,50,50)));
+    exContainer->setMinimumSize(500, 300);
+    setCentralWidget(exContainer);
+
+    // Home button (back to main menu)
+    exHomeButton = new QPushButton(exContainer);
+    exHomeButton->setIcon(QIcon(QDir::currentPath() + "/icons/home.png"));
+    exHomeButton->setFixedWidth(50);
+    exHomeButton->setIconSize(QSize(40, 40));
+    connect(exHomeButton, &QPushButton::clicked, this, [=]{
+        sim->setPaused(true);
+        createMainMenu();
+        clearExplorationMode();
+    });
+    exHomeButton->move(width() - 55, height() - 53);
+
+    // Game over text
+    QFont f("Fantasy", 70, QFont::Bold);
+    QString str("GAME OVER");
+    QFontMetrics fm(f);
+    exGameOverWidth = fm.width(str); // Find width of text
+    exGameOver = new QLabel(str, exContainer);
+    exGameOver->setStyleSheet("QLabel {color: #dbdbdb}");
+    exGameOver->setFont(f);
+    exGameOver->move(width() / 2 - exGameOverWidth / 2, height() / 3);
+    exGameOver->hide();
+
+    // Main menu button (shows when game over)
+    QFont f2("Fantasy", 15, QFont::Bold);
+    exMainMenu = new QPushButton("Main Menu", exContainer);
+    exMainMenu->setFont(f2);
+    exMainMenu->setStyleSheet(BUTTON_STYLE);
+    exMainMenu->setFixedWidth(200);
+    connect(exMainMenu, &QPushButton::clicked, this, [=]{
+        sim->setPaused(true);
+        createMainMenu();
+        clearExplorationMode();
+    });
+    exMainMenu->move(width() / 2 - 100, height() / 3 + 125);
+    exMainMenu->hide();
+
+    // Listen for the game over signal from SimulationWidget
+    connect(simWidget, &SimulationWidget::gameOverSignal, this, [=]{
+        exHomeButton->hide();
+        exGameOver->show();
+        exMainMenu->show();
+    });
+
+    // Start the simulation
+    sim->setPaused(false);
+}
+
+/**
+ * @brief MainWindow::clearExplorationMode Deletes the exploration mode
+ * components.
+ */
+void MainWindow::clearExplorationMode() {
+    delete exContainer;
 }
 
 /**
@@ -294,6 +400,7 @@ void MainWindow::clearSandboxMode() {
  * its components and puts them on the screen.
  */
 void MainWindow::createControlsScreen() {
+    mode = ControlsScreen;
     // Container widget for the whole scontrols screen
     csContainer = new QWidget;
     csContainer->setAutoFillBackground(true);
@@ -303,9 +410,9 @@ void MainWindow::createControlsScreen() {
     cshLayout = new QHBoxLayout(csContainer);
     // Filler to ensure the text is centred on the screen and not offset
     // by adding the home button on the right
-    QWidget filler;
-    filler.setMinimumWidth(50);
-    cshLayout->addWidget(&filler);
+    QWidget *filler = new QWidget;
+    filler->setFixedWidth(50);
+    cshLayout->addWidget(filler);
     // Vertical layout for the text
     csvLayout = new QVBoxLayout();
 
@@ -322,7 +429,7 @@ void MainWindow::createControlsScreen() {
     // Sandbox controls title
     csSandboxTitle = new QLabel("<h3>Sandbox Controls</h3>");
     csvSandboxLayout->addWidget(csSandboxTitle, 0, Qt::AlignCenter);
-    // Sandbox controls
+    // Sandbox controls description
     csSandboxText = new QLabel("In the right bar, click on the icon of the type of body you want to spawn (default asteroid). "
                                "Hover over the icon to find out about the properties of that particular body. "
                                "Once you have chosen your celestial body, click and drag on the screen to spawn and fling it. "
@@ -331,6 +438,22 @@ void MainWindow::createControlsScreen() {
     csSandboxText->setMinimumHeight(100);
     csvSandboxLayout->addWidget(csSandboxText, 0, Qt::AlignCenter);
     csvLayout->addWidget(csSandboxContainer, 0, Qt::AlignCenter);
+
+    // Container widget for exploration controls (to keep them together)
+    csExplorationContainer = new QWidget;
+    csvExplorationLayout = new QVBoxLayout(csExplorationContainer);
+    // Exploration controls title
+    csExplorationTitle = new QLabel("<h3>Exploration Controls</h3>");
+    csvExplorationLayout->addWidget(csExplorationTitle, 0, Qt::AlignCenter);
+    // Exploration controls description
+    csExplorationText = new QLabel("In the Exploration mode you control a rocket, placed in the centre of the screen. Press and "
+                                   "hold W to fire the rocket's engines and increase your velocity in the direction you are facing. "
+                                   "Use the A and D keys to rotate the rocket anti-clockwise and clockwise respectively. Fly the "
+                                   "rocket around to explore the procedurally generated universe, but try not to crash!");
+    csExplorationText->setWordWrap(true);
+    csExplorationText->setMinimumHeight(100);
+    csvExplorationLayout->addWidget(csExplorationText, 0, Qt::AlignCenter);
+    csvLayout->addWidget(csExplorationContainer, 0, Qt::AlignCenter);
 
     // Push components to the top
     csvLayout->addStretch();
@@ -359,7 +482,7 @@ void MainWindow::clearControlsScreen() {
 
 /**
  * @brief MainWindow::setSpawnType When a body selector button is pressed,
- * passes the type of body to spawn onto the SimulationWindow class, and
+ * passes the type of body to spawn onto the SimulationWidget class, and
  * unchecks all other buttons pressed.
  * @param type The type of body to spawn
  */
@@ -407,8 +530,11 @@ void MainWindow::setSpawnType(Body::BodyType type) {
             whitedwarfButton->setChecked(false);
             blackholeButton->setChecked(false);
             break;
+        default:
+            // Do nothing
+            break;
     }
-    simwin->setSpawnType(type);
+    simWidget->setSpawnType(type);
 }
 
 /**
@@ -443,6 +569,71 @@ void MainWindow::cyclePlanetIcons() {
         i++;
     }
 }
+
+/**
+ * @brief MainWindow::getMode Returns which mode the window is currently in.
+ * See MainWindow::Mode.
+ * @return The current mode of the window
+ */
+int MainWindow::getMode() {
+    return mode;
+}
+
+/**
+ * @brief MainWindow::resizeEvent Handles the resizing of the window.
+ * @param event The resize event
+ */
+void MainWindow::resizeEvent(QResizeEvent *event) {
+    if (mode == MainMenu && simWidget) {
+        simWidget->resize(event->size());
+    } else if (mode == Exploration) {
+        exHomeButton->move(width() - 55, height() - 53);
+        exGameOver->move(width() / 2 - exGameOverWidth / 2, height() / 3);
+        exMainMenu->move(width() / 2 - 100, height() / 3 + 125);
+    } else {
+        // Let the parent class perform any functions it needs to
+        QMainWindow::resizeEvent(event);
+    }
+}
+
+/**
+ * @brief MainWindow::keyPressEvent Pass a received key press event
+ * onto SimulationWidget to be handled.
+ * @param event The key press event to handle
+ */
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    if (mode == Exploration) {
+        QApplication::sendEvent(simWidget, event);
+    } else {
+        // Pass on key press to base class
+        QMainWindow::keyPressEvent(event);
+    }
+}
+
+/**
+ * @brief MainWindow::keyReleaseEvent Pass a received key release event
+ * onto SimulationWidget to be handled.
+ * @param event The key release event to handle
+ */
+void MainWindow::keyReleaseEvent(QKeyEvent *event) {
+    if (mode == Exploration) {
+        QApplication::sendEvent(simWidget, event);
+    } else {
+        // Pass on key release to base class
+        QMainWindow::keyReleaseEvent(event);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

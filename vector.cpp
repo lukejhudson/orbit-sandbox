@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include <string>
 #include "vector.h"
 
@@ -165,13 +165,25 @@ void Vector::unitVector() {
 }
 
 /**
- * @brief Vector::add Adds this Vector to the given Vector v.
+ * @brief Vector::add Adds the given Vector v to this Vector.
  * @param v The Vector to add to this Vector
  * @return This Vector with the updated x and y values
  */
 Vector Vector::add(Vector v) {
     x += v.getX();
     y += v.getY();
+    return this;
+}
+
+/**
+ * @brief Vector::add Adds the given x and y values to this Vector.
+ * @param x The x value to add
+ * @param y The y value to add
+ * @return This Vector with the updated x and y values
+ */
+Vector Vector::add(double x, double y) {
+    this->x += x;
+    this->y += y;
     return this;
 }
 
@@ -183,6 +195,18 @@ Vector Vector::add(Vector v) {
 Vector Vector::sub(Vector v) {
     x -= v.getX();
     y -= v.getY();
+    return this;
+}
+
+/**
+ * @brief Vector::sub Subtracts the given x and y values from this Vector.
+ * @param x The x value to subtract
+ * @param y The y value to subtract
+ * @return This Vector with the updated x and y values
+ */
+Vector Vector::sub(double x, double y) {
+    this->x -= x;
+    this->y -= y;
     return this;
 }
 

@@ -38,7 +38,7 @@ void AnalogClockWindow::render(QPainter *p) {
 
     p->setRenderHint(QPainter::Antialiasing);
     // Moves the origin to the centre of the window
-    p->translate(width() / 2, height() / 2);
+    p->translate(width() / 2.0, height() / 2.0);
     // Scales the drawing operations so they fit within the window
     int side = qMin(width(), height());
     p->scale(side / 200.0, side / 200.0);

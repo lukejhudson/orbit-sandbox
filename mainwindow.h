@@ -6,7 +6,7 @@
 #include <QtWidgets>
 #include "simulation.h"
 #include "sprites.h"
-#include "simulationwindow.h"
+#include "simulationwidget.h"
 
 class MainWindow : public QMainWindow {
 
@@ -15,12 +15,30 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow();
 
+    enum Mode {
+        MainMenu = 0,
+        ControlsScreen = 1,
+        Sandbox = 2,
+        Exploration = 3
+    };
+
+    int getMode();
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+
 private:
     Sprites *sprites;
     // Simulation itself
     Simulation *sim;
     // Controls simulation
-    SimulationWindow *simwin;
+    SimulationWidget *simWidget;
+    // Which mode we are in
+    Mode mode;
+    // Has the game ended?
+    bool gameOver = false;
 
     // Create all components for the main menu
     void createMainMenu();
@@ -32,6 +50,7 @@ private:
     QLabel *title;
     QLabel *credits;
     QPushButton *sandboxModeButton;
+    QPushButton *explorationModeButton;
     QPushButton *controlsScreenButton;
 
     // Create all components for sandbox mode
@@ -73,6 +92,17 @@ private:
     QLabel *plansysLabel;
     QPushButton *sbHomeButton;
 
+    // Create all components for exploration mode
+    void createExplorationMode();
+    // Remove all components for exploration mode
+    void clearExplorationMode();
+    // Elements for exploration mode
+    QWidget *exContainer;
+    QPushButton *exHomeButton;
+    QLabel *exGameOver;
+    int exGameOverWidth;
+    QPushButton *exMainMenu;
+
     // Create all components for the controls screen
     void createControlsScreen();
     // Remove all components for the controls screen
@@ -86,6 +116,10 @@ private:
     QVBoxLayout *csvSandboxLayout;
     QLabel *csSandboxTitle;
     QLabel *csSandboxText;
+    QWidget *csExplorationContainer;
+    QVBoxLayout *csvExplorationLayout;
+    QLabel *csExplorationTitle;
+    QLabel *csExplorationText;
     QPushButton *csHomeButton;
 
 private slots:

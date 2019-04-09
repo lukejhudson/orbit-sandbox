@@ -22,7 +22,9 @@ public:
     double getSquareNorm(); // Squared distance of vector (no sqrt)
     void unitVector(); // Transform to unit vector
     Vector add(Vector v); // Add 2 vectors
+    Vector add(double x, double y);
     Vector sub(Vector v); // Sub 2 vectors
+    Vector sub(double x, double y);
     bool equals(Vector v); // This vector == v?
     Vector copy(); // Returns a copy of this Vector
     std::string toString(); // std::string form of vector
