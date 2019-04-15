@@ -7,6 +7,10 @@
 #include "rocket.h"
 #include "sprites.h"
 
+// Gravitational constant - Essentially controls the speed of the simulation
+#define G_DEFAULT 0.005
+// #define G  6.67428E-11
+
 /*
  * Runs the actual simulation. Updates the positions and velocities
  * of each body at regular intervals.
@@ -28,6 +32,7 @@ public:
     std::list<Body*>* getBodies();
     void addBody(Body *b);
     [[noreturn]] void run(); // Start the simulation
+    void setG(double factor);
     void setVisibleRegion(double x, double y, double newWidth, double newHeight, double newScale);
     void setPaused(bool b);
     int getMode();
@@ -40,6 +45,8 @@ public:
 
 private:
     void calculateOrbitVelocity(Body *newBody, Body *central, int maxOrbitDistance);
+
+    double G = G_DEFAULT;
 
     std::list<Body*> bodies;
     std::mutex mut; // Mutex used for locking bodies list

@@ -4,13 +4,20 @@
 #define TITLE_STYLE "\"font-family:Sans Serif; font-size:70pt;\""
 #define BUTTON_STYLE "QPushButton {background-color: #4f5154; color: white;}"
 
+#define SB_SELECTOR_WIDTH 60
+
 MainWindow::MainWindow() {
     sprites = new Sprites();
     setWindowTitle("Orbit Sandbox");
-    resize(1000, 600);
-    setMinimumSize(1000, 600);
+    resize(1000, 660);
+    setMinimumSize(1000, 660);
 
     sim = new Simulation(*sprites);
+
+    titleFont = new QFont("Fantasy", 70, QFont::Bold);
+    buttonFont = new QFont("Fantasy", 14, QFont::Bold);
+    labelFont = new QFont("Fantasy", 10);
+    labelFontBold = new QFont("Fantasy", 10, QFont::Bold);
 
     createMainMenu();
 }
@@ -52,8 +59,7 @@ void MainWindow::createMainMenu() {
     mmvLayout->addWidget(credits, 0, Qt::AlignCenter);
     // Button to enter sandbox mode
     sandboxModeButton = new QPushButton("Sandbox Mode");
-    QFont f("Fantasy", 15, QFont::Bold);
-    sandboxModeButton->setFont(f);
+    sandboxModeButton->setFont(*buttonFont);
     sandboxModeButton->setStyleSheet(BUTTON_STYLE);
     sandboxModeButton->setFixedWidth(200);
     connect(sandboxModeButton, &QPushButton::clicked, this, [=]{
@@ -65,7 +71,7 @@ void MainWindow::createMainMenu() {
 
     // Button to enter exploration mode
     explorationModeButton = new QPushButton("Exploration Mode");
-    explorationModeButton->setFont(f);
+    explorationModeButton->setFont(*buttonFont);
     explorationModeButton->setStyleSheet(BUTTON_STYLE);
     explorationModeButton->setFixedWidth(200);
     connect(explorationModeButton, &QPushButton::clicked, this, [=]{
@@ -77,7 +83,7 @@ void MainWindow::createMainMenu() {
 
     // Button to enter controls screen
     controlsScreenButton = new QPushButton("Controls");
-    controlsScreenButton->setFont(f);
+    controlsScreenButton->setFont(*buttonFont);
     controlsScreenButton->setStyleSheet(BUTTON_STYLE);
     controlsScreenButton->setFixedWidth(200);
     connect(controlsScreenButton, &QPushButton::clicked, this, [=]{
@@ -124,15 +130,16 @@ void MainWindow::createSandboxMode() {
 
     // Title for body selector menu
     spawnLabel = new QLabel("<b>Select Body to Spawn</b>");
+    spawnLabel->setFont(*labelFontBold);
     spawnLabel->setWordWrap(true);
     spawnLabel->setAlignment(Qt::AlignCenter);
-    spawnLabel->setFixedWidth(50);
+    spawnLabel->setFixedWidth(SB_SELECTOR_WIDTH);
     sbvLayout->addWidget(spawnLabel, 0, Qt::AlignTop);
 
     /* ASTEROID SELECTOR */
     // Widget containing both button and label
     asteroidContainer = new QWidget;
-    asteroidContainer->setFixedWidth(50);
+    asteroidContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     asteroidContainer->setToolTip("Select to spawn an asteroid:\nVery small, "
                                   "very low mass, very low gravitational force");
     vAsteroidLayout = new QVBoxLayout(asteroidContainer);
@@ -150,6 +157,7 @@ void MainWindow::createSandboxMode() {
     connect(asteroidButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Asteroid);});
     // Asteroid label
     asteroidLabel = new QLabel("Asteroid");
+    asteroidLabel->setFont(*labelFont);
     asteroidLabel->setAlignment(Qt::AlignCenter);
     // Combine button and label
     vAsteroidLayout->addWidget(asteroidButton);
@@ -160,7 +168,7 @@ void MainWindow::createSandboxMode() {
     /* PLANET SELECTOR */
     // Widget containing both button and label
     planetContainer = new QWidget;
-    planetContainer->setFixedWidth(50);
+    planetContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     planetContainer->setToolTip("Select to spawn a planet:\nSmall, "
                                 "low mass, low gravitational force");
     vPlanetLayout = new QVBoxLayout(planetContainer);
@@ -179,6 +187,7 @@ void MainWindow::createSandboxMode() {
     connect(planetButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Planet);});
     // Planet label
     planetLabel = new QLabel("Planet");
+    planetLabel->setFont(*labelFont);
     planetLabel->setAlignment(Qt::AlignCenter);
     // Combine button and label
     vPlanetLayout->addWidget(planetButton);
@@ -189,7 +198,7 @@ void MainWindow::createSandboxMode() {
     /* STAR SELECTOR */
     // Widget
     starContainer = new QWidget;
-    starContainer->setFixedWidth(50);
+    starContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     starContainer->setToolTip("Select to spawn a star:\nLarge, high mass, "
                               "high gravitational force");
     vStarLayout = new QVBoxLayout(starContainer);
@@ -205,6 +214,7 @@ void MainWindow::createSandboxMode() {
     connect(starButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::Star);});
     // Label
     starLabel = new QLabel("Star");
+    starLabel->setFont(*labelFont);
     starLabel->setAlignment(Qt::AlignCenter);
     // Combine
     vStarLayout->addWidget(starButton);
@@ -215,7 +225,7 @@ void MainWindow::createSandboxMode() {
     /* WHITE DWARF SELECTOR */
     // Widget
     whitedwarfContainer = new QWidget;
-    whitedwarfContainer->setFixedWidth(50);
+    whitedwarfContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     whitedwarfContainer->setToolTip("Select to spawn a white dwarf:\nSmall, "
                                     "high mass, very high gravitational force");
     vWhitedwarfLayout = new QVBoxLayout(whitedwarfContainer);
@@ -231,6 +241,7 @@ void MainWindow::createSandboxMode() {
     connect(whitedwarfButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::WhiteDwarf);});
     // Label
     whitedwarfLabel = new QLabel("White Dwarf");
+    whitedwarfLabel->setFont(*labelFont);
     whitedwarfLabel->setWordWrap(true);
     whitedwarfLabel->setAlignment(Qt::AlignCenter);
     whitedwarfLabel->setFixedHeight(25);
@@ -243,7 +254,7 @@ void MainWindow::createSandboxMode() {
     /* BLACK HOLE SELECTOR */
     // Widget
     blackholeContainer = new QWidget;
-    blackholeContainer->setFixedWidth(50);
+    blackholeContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     blackholeContainer->setToolTip("Select to spawn a black hole:\nSmall, "
                                    "very high mass, extremely high gravitational force");
     vBlackholeLayout = new QVBoxLayout(blackholeContainer);
@@ -259,6 +270,7 @@ void MainWindow::createSandboxMode() {
     connect(blackholeButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::BlackHole);});
     // Label
     blackholeLabel = new QLabel("Black Hole");
+    blackholeLabel->setFont(*labelFont);
     blackholeLabel->setWordWrap(true);
     blackholeLabel->setAlignment(Qt::AlignCenter);
     // Combine
@@ -270,7 +282,7 @@ void MainWindow::createSandboxMode() {
     /* PLANETARY SYSTEM SELECTOR */
     // Widget
     plansysContainer = new QWidget;
-    plansysContainer->setFixedWidth(50);
+    plansysContainer->setFixedWidth(SB_SELECTOR_WIDTH);
     plansysContainer->setToolTip("Select to spawn a planetary system:\nA random central "
                                  "body surrounded by a number of randomly generated planets");
     vPlansysLayout = new QVBoxLayout(plansysContainer);
@@ -286,6 +298,7 @@ void MainWindow::createSandboxMode() {
     connect(plansysButton, &QPushButton::clicked, this, [=] {setSpawnType(Body::PlanetarySystem);});
     // Label
     plansysLabel = new QLabel("Planetary System");
+    plansysLabel->setFont(*labelFont);
     plansysLabel->setWordWrap(true);
     plansysLabel->setAlignment(Qt::AlignCenter);
     plansysLabel->setFixedHeight(25);
@@ -295,6 +308,31 @@ void MainWindow::createSandboxMode() {
     // Add to menu
     sbvLayout->addWidget(plansysContainer, 0, Qt::AlignTop);
 
+    /* GRAVITY SLIDER */
+    // Widget
+    gravityContainer = new QWidget;
+    gravityContainer->setFixedWidth(SB_SELECTOR_WIDTH);
+    gravityContainer->setToolTip("Use the slider to adjust the strength of gravity");
+    vGravityLayout = new QVBoxLayout(gravityContainer);
+    vGravityLayout->setMargin(0);
+    // Slider
+    sbGravitySlider = new QSlider(Qt::Horizontal, sbContainer);
+    sbGravitySlider->setMinimum(-4);
+    sbGravitySlider->setMaximum(4);
+    sbGravitySlider->setValue(0);
+    connect(sbGravitySlider, &QSlider::valueChanged, this, [=] {
+        sim->setG(pow(2, sbGravitySlider->value()));
+    });
+    // Label
+    gravityLabel = new QLabel("Gravity");
+    gravityLabel->setFont(*labelFont);
+    gravityLabel->setAlignment(Qt::AlignCenter);
+    // Combine
+    vGravityLayout->addWidget(sbGravitySlider);
+    vGravityLayout->addWidget(gravityLabel);
+    // Add to menu
+    sbvLayout->addWidget(gravityContainer, 0, Qt::AlignTop);
+
     // Add stretch between last body selector and the home button
     // Keeps the button spacing consistent and differentiates the home button
     sbvLayout->addStretch();
@@ -302,7 +340,7 @@ void MainWindow::createSandboxMode() {
     // Home button (back to main menu)
     sbHomeButton = new QPushButton(sbContainer);
     sbHomeButton->setIcon(QIcon(QDir::currentPath() + "/icons/home.png"));
-    sbHomeButton->setFixedWidth(50);
+    sbHomeButton->setFixedWidth(SB_SELECTOR_WIDTH);
     sbHomeButton->setIconSize(QSize(40, 40));
     connect(sbHomeButton, &QPushButton::clicked, this, [=]{
         sim->setPaused(true);
@@ -352,20 +390,18 @@ void MainWindow::createExplorationMode() {
     exHomeButton->move(width() - 55, height() - 53);
 
     // Game over text
-    QFont f("Fantasy", 70, QFont::Bold);
     QString str("GAME OVER");
-    QFontMetrics fm(f);
+    QFontMetrics fm(*titleFont);
     exGameOverWidth = fm.width(str); // Find width of text
     exGameOver = new QLabel(str, exContainer);
     exGameOver->setStyleSheet("QLabel {color: #dbdbdb}");
-    exGameOver->setFont(f);
+    exGameOver->setFont(*titleFont);
     exGameOver->move(width() / 2 - exGameOverWidth / 2, height() / 3);
     exGameOver->hide();
 
     // Main menu button (shows when game over)
-    QFont f2("Fantasy", 15, QFont::Bold);
     exMainMenu = new QPushButton("Main Menu", exContainer);
-    exMainMenu->setFont(f2);
+    exMainMenu->setFont(*buttonFont);
     exMainMenu->setStyleSheet(BUTTON_STYLE);
     exMainMenu->setFixedWidth(200);
     connect(exMainMenu, &QPushButton::clicked, this, [=]{

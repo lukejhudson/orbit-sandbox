@@ -40,6 +40,12 @@ private:
     // Has the game ended?
     bool gameOver = false;
 
+    // Fonts
+    QFont *titleFont;
+    QFont *buttonFont;
+    QFont *labelFont;
+    QFont *labelFontBold;
+
     // Create all components for the main menu
     void createMainMenu();
     // Remove all components for the main menu
@@ -90,6 +96,10 @@ private:
     QVBoxLayout *vPlansysLayout;
     QPushButton *plansysButton;
     QLabel *plansysLabel;
+    QWidget *gravityContainer;
+    QVBoxLayout *vGravityLayout;
+    QSlider *sbGravitySlider;
+    QLabel *gravityLabel;
     QPushButton *sbHomeButton;
 
     // Create all components for exploration mode

@@ -5,9 +5,6 @@
 #include "simulation.h"
 #include "simulationwidget.h"
 
-// Gravitational constant - Essentially controls the speed of the simulation
-#define G 0.005
-// #define G  6.67428E-11
 #define MAX_SYSTEM_ORBIT_RADIUS 250
 #define MAX_PLANET_ORBIT_RADIUS 20
 // How scaled down the map is compared to the user's view
@@ -594,12 +591,20 @@ void Simulation::run() {
             tickEndTime = std::chrono::high_resolution_clock::now();
             tickElapsedTime = tickEndTime - tickStartTime;
         }
-        //std::cout << "Ticks per second = " << 1000 / tickElapsedTime.count() << std::endl;
+        std::cout << "Ticks per second = " << 1000 / tickElapsedTime.count() << std::endl;
     }
 }
 
 /**
- * @brief Simulation::setVisibleRegion
+ * @brief Simulation::setG Sets the strength of gravity, G.
+ * @param factor newGravity = factor * defaultGravity
+ */
+void Simulation::setG(double factor) {
+    G = factor * G_DEFAULT;
+}
+
+/**
+ * @brief Simulation::setVisibleRegion Updates the visible region of the player.
  * @param x The x-coordinate of the top left of the visible region
  * @param y The y-coordinate of the top elft of the visible region
  * @param newWidth The width of the visible region
@@ -699,9 +704,6 @@ QRectF Simulation::calculateValidSpawningRegion() {
 QImage* Simulation::getMap() {
     return exploredMap;
 }
-
-
-
 
 
 
