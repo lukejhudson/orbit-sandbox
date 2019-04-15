@@ -1,0 +1,188 @@
+TODO: 
+	VALGRIND
+
+	Hopefully can just change the speed of the central body later to make everything orbit a SMBH
+
+	Need more optimisations, probably need to break apart the main O(n^2) loop
+		Have some house keeping to keep track of what "sector" each body is in?
+		Lower tick rate for bodies far off screen?
+			May cause some problems since calculations would be less accurate
+		Separate loop for each body type?
+			Collision detection and moving for all, then gravity calculations with several different loops?
+		Need to figure out what is making it so slow
+			Gravity calculations seem fine
+			Might just be the n^2 loop
+	Ideally, parallelise and run main loop on gpu
+	
+	Start zoomed in
+		Start how it is now, but zoom in slowly and smoothly
+		Smoother zooming?
+		Limit how far you can zoom in / out
+
+			
+
+	Home buttons in various screens are not in exact same place
+	INVISIBLE THINGS (sprite diameter = 0) DO NOT COLLIDE
+		Problem? Actually more efficient to just ignore things that are invisble?
+	Eat mode
+		Like spore or agar.io etc
+		Start as asteroid orbiting planet with other asteroids
+		Consume other asteroids until you can consume a moon
+		Then planet, star, solar system, galaxy, universe
+	Animation when two bodies collide
+
+	Path of bodies shown?
+		Recalculated whenever a collision occurs
+		Recalculated constantly since bodies moving around?
+
+BUGS:
+	Resizing a lot can cause crashes?
+
+CHANGELOG:
+	8/3
+	Simulation starts with a randomly generated planetary system (no moons)
+		Random central body (star / dwarf star / black hole)
+		Random number of planets around which start in orbit of the central body
+
+	11/3
+	Neatened up spawning bar in sandbox mode
+		Added a stetch after the body selectors to keep the spacing consistent when resizing the window, and to differentiate between the selectors and the home button
+	Made body types (e.g. asteroid = 0) into an enum in body
+	Changed velocity calculations when two bodies collide
+		Now based on 2x 1D momentum calculations
+			More consistent and realistic
+			Momentum conserved, so should have less effect on the system as a whole
+	Asteroids can now spawn in orbit of planets which are spawned in a planetary system
+		Masses adjusted to ensure roughly expected behaviour
+	Moving the camera with the middle mouse button is now much smoother when zoomed in
+	Moved functionality of RasterWindow (the original reference class for creating a window) into SimulationWindow for greater control
+	Resizing the window now adjusts the camera to keep what was centred before, centred after
+	Created ability to spawn a randomly generated planetary system
+
+	12/3
+	Converted SimulationWindow, a QWindow, to SimulationWidget, a QWidget
+	Added a simulation with a single planetary system running in the background of the main menu
+
+	13/3
+	Now use QPixmaps instead of QImages
+	Struggled a lot with more advanced collision detection
+		See if the two sprites are overlapping
+
+	14/3
+	Added more advanced collision detection, now checks if the two bodies in question have overlapping sprites, rather than assuming they are just perfect circles
+	Started work on adding new exploration mode
+
+	15/3
+	More work on exploration mode
+		Can now spawn and draw a rocket, rotate the rocket, almost make it move
+		Key listeners in MainWindow and SimulationWidget to control the rocket
+			Only work in exploration mode
+	
+	16/3
+	Acceleration of rocket
+	Camera in Exploration mode is now centred on the player controlled rocket
+	Made zooming in/out more consistent
+		Zoom in 5 times, zoom out 5 times --> Back where you started
+	Rocket now spawns as part of a planetary system, orbiting a planet with no other satellites
+	Collision handling between rocket and other bodies
+		Only the idle sprite is considered when checking for collisions
+			Fire from engines does not cause collisions
+		Rocket becomes inactive but simulation continues
+		Started work on explosion animation
+
+	17/3
+	Explosion animation complete
+	Started work on looped background which is scaled to add some parallax
+
+	18/3
+	Continued work on background, nearly completed
+
+	19/3
+	Completed work on background for now
+		Not entirely sure if it's intuitive, but it looks smooth
+		Gives a nice sense of speed in Exploration mode
+
+	26/3
+	Procedural generation of planetary systems is now implemented in Exploration mode
+		Plenty of room for improvement
+	Changed lots of x and y variables into Vectors inside SimulationWidget, e.g. currentOffsetX and currentOffsetY --> currentOffset
+	Started work on optimisations, since the performance of the Simulation is horrible when there are many many bodies
+		Only bodies that are on screen have advanced collision detection
+			Bodies are assumed to be rectangles otherwise
+
+	3/4
+	Small improvements/bug fixes to procedural generation
+	There should more consistently be ~60 ticks/sec even when under heavier load
+		Rather than always sleeping for 16ms and not accounting for how long each tick takes, now consider how long since last tick
+	Optimisations:
+		Before calculating anything, see if the two bodies are remotely close to each other, otherwise skip all calculations
+		Before calculating gravitational forces, now look at ratio of masses between the two bodies as well as the squared distance between them to see if it's worth calculating the forces
+			No longer calculate force of an asteroid on a star, for example
+		No advanced collision detection when zoomed far out
+			Wouldn't be able to tell anyway
+
+	4/4
+	The movement of the background in exploration mode is now smoother
+		No sudden change in speed when going from scale > 1 to scale < 1
+	The bodies and backgrounds being drawn are now much less jittery (aside from integer rounding errors)
+	"GAME OVER" and "Main Menu" button pop up after rocket explodes and explosion animation completes in exploration mode
+	Added controls information for Exploration mode
+
+	6/4
+	Each body no longer stores its own sprite
+		Sprite is resized when drawn
+			More efficient this way
+		No more massive lag when zoomed in very far
+	Improved collision detection when the rocket is involved
+		Forgot to rotate it previously
+
+	7/4
+	Fixed wobbly backgrounds at low speeds
+		Integer rounding errors
+	Fixed bug where one tick could finish in under 16.6ms and the next tick could begin immediately, causing the game to momentarily speed up
+	Limited the amount the user can zoom in / out
+		Can no longer zoom in much further than you would ever want to, causing the program to render giant images and resulting in a crash
+		Zoom out distance also limited
+			Maybe not necessary but currently prevents lag due to the way planetary systems are spawned
+
+	8/4
+	Started to fix procedural generation
+		Created a image which shows where the rocket has explored so far
+			Automatically resizes if the rocket goes off the map
+
+	9/4
+	Converted lots of unnecessary Vectors into QPointFs or QRects
+		Neater and more efficient since we don't need the added functionality of a Vector 
+	Procedural generation now works much better
+		Many fewer systems are spawned now, but from the player's perspective it still looks very busy, with well-spaced out systems
+			--> Much less laggy
+		Also, since it checks which areas have been explored so far, leaving an area and then later returning to the area will not cause systems to be spawned again in that area
+			--> Much better continuity
+		Perhaps some room for improvement when spawning systems when zooming out
+			Sometimes can be large gaps between systems
+		Zooming in for a while, then zooming out after several seconds will result in more densely packed systems, since the simulation attempts to spawn more and more systems
+			Tried to keep track of where the sim had already tried to spawn system in, but when moving around the sim would only have a sliver of space to spawn new systems
+	Increased the minimum space between systems --> Much less laggy
+		11 tps --> ~20 tps when first spawning tons of systems
+	Ticks per second counter if needed
+
+	10/4
+	Added slider to adjust strength of gravity in sandbox mode
+	Played around with some more optimisation, e.g. using sqDist^2 rather than dist^3 (which ruined all the physics), but made virtually no difference
+
+	15/4
+	More optimisations --> Major performance improvements
+		Lots of variables were being fetched many extra times, e.g. iter1Pos, whereas they only need to be fetched once per outer loop (n times rather than n^2 times)
+		Parallelisation
+			Several threads are created to handle the main n^2 loop in the Simulation
+			Currently 50 bodies are handled per thread
+
+
+
+
+
+
+
+
+
+

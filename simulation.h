@@ -45,6 +45,7 @@ public:
 
 private:
     void calculateOrbitVelocity(Body *newBody, Body *central, int maxOrbitDistance);
+    void tick(std::list<Body*>::iterator start, std::list<Body*>::iterator end);
 
     double G = G_DEFAULT;
 

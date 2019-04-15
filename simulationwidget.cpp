@@ -161,7 +161,7 @@ void SimulationWidget::wheelEvent(QWheelEvent *event) {
         double backgroundWidthBefore = sprites.backgroundImage.width() * reducedScale;
         double backgroundHeightBefore = sprites.backgroundImage.height() * reducedScale;
         double backgroundWidthAfter, backgroundHeightAfter;
-        std::cout << "Before: " << scale;
+        //std::cout << "Before: " << scale;
         if (event->delta() > 0) {
             // Zoom in
             if (scale < 50) {
@@ -175,7 +175,7 @@ void SimulationWidget::wheelEvent(QWheelEvent *event) {
                 *currentOffset -= QPointF((0.1 * width()) / scale, (0.1 * height()) / scale);
             }
         }
-        std::cout << ", After: " << scale << std::endl;
+        //std::cout << ", After: " << scale << std::endl;
         // Calculate size of background images after the resize
         reducedScale = (scale + 4) / 5;
         backgroundWidthAfter = sprites.backgroundImage.width() * reducedScale;

@@ -9,6 +9,8 @@
 #define MAX_PLANET_ORBIT_RADIUS 20
 // How scaled down the map is compared to the user's view
 #define MAP_SCALE 100.0
+// How many bodies each thread should handle in a tick
+#define BODIES_PER_THREAD 50
 
 /**
  * @brief Simulation::Simulation Initialises the class, adds a star and two
@@ -37,6 +39,7 @@ void Simulation::resetSim() {
     mut.unlock();
     bodies.erase(bodies.begin(), bodies.end());
     scale = 1;
+    G = G_DEFAULT;
     // Spawn initial planetary system in the centre of the screen, along
     // with a player-controlled rocket if we are in the Exploration mode
     spawnPlanetarySystem(0, 0, 0, 0, mode == Exploration);
@@ -295,16 +298,12 @@ void Simulation::run() {
     std::chrono::duration<double, std::milli> tickElapsedTime;
     int loopCount = 0;
 
-    // Create some frequently used variables
-    Vector iter1Pos, iter2Pos;
-    double iter1X, iter1Y, iter1Diam, iter2X, iter2Y, iter2Diam;
-    bool collision = false;
-
     while (true) {
         if (!paused) {
             tickStartTime = std::chrono::high_resolution_clock::now();
             if (mode == Exploration) {
-                if (loopCount % 30 == 0) {
+                // No need to spawn every tick, spawn once per 30 ticks
+                if (loopCount % 10 == 0) {
                     spawnPlanetarySystem();
 
                     // Update map with area explored
@@ -354,212 +353,34 @@ void Simulation::run() {
                 }
             }
 
-            // For each body
-            for (std::list<Body*>::iterator iter1 = bodies.begin(), end1 = bodies.end(); iter1 != end1; ++iter1) {
-                // For each other body
-                for (std::list<Body*>::iterator iter2 = bodies.begin(), end2 = bodies.end(); iter2 != end2; ++iter2) {
-                    // Make sure the two bodies are not the same and that they are both active
-                    if (iter1 != iter2 && (*iter1)->isActive() && (*iter2)->isActive()) {
-                        // Initialise frequently used variables
-                        iter1Pos = (*iter1)->getPos();
-                        iter1X = iter1Pos.getX();
-                        iter1Y = iter1Pos.getY();
-                        iter1Diam = (*iter1)->getDiameter();
-                        iter2Pos = (*iter2)->getPos();
-                        iter2X = iter2Pos.getX();
-                        iter2Y = iter2Pos.getY();
-                        iter2Diam = (*iter2)->getDiameter();
+            // Split the main bodies list into several smaller lists, and have
+            // several threads work in parallel to perform the tick
+            int numThreads = (static_cast<int>(bodies.size()) - 1) / BODIES_PER_THREAD + 1;
+            //std::cout << "numThreads = " << numThreads << std::endl;
+            std::list<std::thread> threads;
+            int numBodies = static_cast<int>(bodies.size());
 
-                        // If collision (dist between is less than half the sum of their diameters)
-                        //if ((*iter1)->getPos().squareDist((*iter2)->getPos()) <
-                        //        pow((*iter1)->getDiameter() / 2, 2) + pow((*iter2)->getDiameter() / 2, 2)) {
+            // Iterator of start of batch of bodies
+            auto start = bodies.begin();
 
-                        collision = false;
-                        // Are the bodies even remotely close to each other?
-                        if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < 500) {
-                            // Assuming the two bodies are rectangles, do they overlap?
-                            if (fabs(iter1X - iter2X) < ((iter1Diam + iter2Diam) / 2)
-                                    && fabs(iter1Y - iter2Y) < ((iter1Diam + iter2Diam) / 2)) {
-                                // The rectangles overlap --> Is either body on screen?
-                                // Zoomed out too far     --> Accurate collision detection not important, good enough
-                                // Both off screen        --> Good enough
-                                // One or both on screen  --> Further checks
-                                if (scale > 0.3
-                                      && ((*iter1)->isWithin(*visibleRegion)
-                                      || (*iter2)->isWithin(*visibleRegion))) {
-                                    // On screen --> Check if sprites overlap
-
-                                    // Get the sprites of the bodies
-                                    QPixmap sprite1, sprite2;
-                                    if ((*iter1)->getType() == Body::PlayerRocket) {
-                                        sprite1 = sprites.rocketIdleImage;
-                                        sprite2 = sprites.getImage(*iter2);
-                                    } else if ((*iter2)->getType() == Body::PlayerRocket) {
-                                        sprite1 = sprites.getImage(*iter1);
-                                        sprite2 = sprites.rocketIdleImage;
-                                    } else {
-                                        sprite1 = sprites.getImage(*iter1);
-                                        sprite2 = sprites.getImage(*iter2);
-                                    }
-                                    // Resize the sprites so they're as big as they are on screen
-                                    sprite1 = sprite1.scaled(static_cast<int>(iter1Diam * scale),
-                                                             static_cast<int>(iter1Diam * scale));
-                                    sprite2 = sprite2.scaled(static_cast<int>(iter2Diam * scale),
-                                                             static_cast<int>(iter2Diam * scale));
-
-                                    // Image big enough for just the overlapping parts
-                                    // One body's origin will be in one corner, the other in the opposite
-                                    int imgWidth = static_cast<int>(scale * fabs((iter1X - iter2X)));
-                                    if (imgWidth <= 0) imgWidth = 1;
-                                    int imgHeight = static_cast<int>(scale * fabs((iter1Y - iter2Y)));
-                                    if (imgHeight <= 0) imgHeight = 1;
-
-                                    // The sprite images are QImages with the cropped and correctly placed sprites,
-                                    // with any leftover background set to transparent
-                                    // The sprite images are then combined (into spriteImage1) using
-                                    // QPainter::CompositionMode_SourceIn to only display overlapping parts of the images
-                                    QImage spriteImage1(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
-                                    spriteImage1.fill(QColor(0,0,0,0));
-                                    QImage spriteImage2(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
-                                    spriteImage2.fill(QColor(0,0,0,0));
-
-                                    // Minimums will be the coordinates of the top left of the image
-                                    // Taking away the minimums from the bodies' coordinates will produce
-                                    // their correct new coordinates for the overlap image
-                                    double minX = fmin(iter1X, iter2X);
-                                    double minY = fmin(iter1Y, iter2Y);
-                                    // Calculate the coordinates where the images need to be drawn
-                                    double x1 = scale * (iter1X - minX);
-                                    double y1 = scale * (iter1Y - minY);
-                                    double x2 = scale * (iter2X - minX);
-                                    double y2 = scale * (iter2Y - minY);
-
-                                    // Draw sprites into the spriteImages
-                                    QPainter p1(&spriteImage1);
-                                    // If we are drawing a rocket we need to rotate it to the correct angle
-                                    if ((*iter1)->getType() == Body::PlayerRocket) {
-                                        // Save state of the painter
-                                        p1.save();
-                                        // Move the painter to where the rocket is going to be drawn
-                                        // (Want the centre of rotation to be the centre of the rocket)
-                                        p1.translate(x1, y1);
-                                        p1.rotate(rocket->getAngle());
-                                        p1.drawImage(static_cast<int>(-scale * (iter1Diam / 2.0)),
-                                                     static_cast<int>(-scale * (iter1Diam / 2.0)),
-                                                     sprite1.toImage());
-                                        // Restore state of the painter
-                                        p1.restore();
-                                    } else {
-                                        p1.drawImage(static_cast<int>(x1 - scale * (iter1Diam / 2.0)),
-                                                     static_cast<int>(y1 - scale * (iter1Diam / 2.0)),
-                                                     sprite1.toImage());
-                                    }
-
-                                    QPainter p2(&spriteImage2);
-                                    if ((*iter2)->getType() == Body::PlayerRocket) {
-                                        p2.save();
-                                        p2.translate(x2, y2);
-                                        p2.rotate(rocket->getAngle());
-                                        p2.drawImage(static_cast<int>(-scale * (iter2Diam / 2.0)),
-                                                     static_cast<int>(-scale * (iter2Diam / 2.0)),
-                                                     sprite2.toImage());
-                                        p2.restore();
-                                    } else {
-                                        p2.drawImage(static_cast<int>(x2 - scale * (iter2Diam / 2.0)),
-                                                     static_cast<int>(y2 - scale * (iter2Diam / 2.0)),
-                                                     sprite2.toImage());
-                                    }
-                                    // Draw the spriteImages on top of each other and find any overlap
-                                    p1.setCompositionMode(QPainter::CompositionMode_SourceIn);
-                                    p1.drawImage(0, 0, spriteImage2);
-
-                                    uchar *line;
-                                    collision = false;
-                                    QRgb pixel;
-                                    // Scan through the image, if any pixels are not ARGB=00000000 then there was
-                                    // some overlap --> collision has occurred
-                                    for (int i = 0, height = spriteImage1.height(); i < height && !collision; i++) {
-                                        // Look at each line
-                                        line = spriteImage1.scanLine(i);
-                                        for (int j = 0, width = spriteImage1.width(); j < width; j++) {
-                                            // Look at each pixel in line
-                                            pixel = static_cast<QRgb>(line[static_cast<unsigned int>(j) * sizeof (QRgb)]);
-                                            if (pixel != 00000000) {
-                                                collision = true;
-                                                if ((*iter1)->getType() == Body::PlayerRocket
-                                                        || (*iter2)->getType() == Body::PlayerRocket) {
-                                                }
-                                                break;
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    collision = true;
-                                }
-                            }
-                        }
-                        // We are sure a collision has occurred --> Handle it
-                        if (collision) {
-                            // Rocket shouldn't combine, it should explode instead
-                            if (mode == Exploration
-                                    && ((*iter1)->getType() == Body::PlayerRocket
-                                        || (*iter2)->getType() == Body::PlayerRocket)) {
-                                std::cout << "ROCKET COLLISION" << std::endl;
-                                rocket->setVel(0, 0);
-                                rocket->setActive(false);
-                                rocket->setExploding(true);
-                            } else {
-                                // Combine the two colliding bodies, and mark the smaller body for removal
-                                if ((*iter1)->getMass() >= (*iter2)->getMass()) {
-                                    (*iter1)->combine(*iter2);
-                                    (*iter2)->setActive(false);
-                                } else {
-                                    (*iter2)->combine(*iter1);
-                                    (*iter1)->setActive(false);
-                                }
-                            }
-                        } else {
-                            // Are the bodies even remotely close to each other?
-                            if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < 2000) {
-                                // Some optimisations to make sure it's worthwhile to calculate the gravitational forces
-                                // At very large distances the force is negligible
-                                double iter1Mass = (*iter1)->getMass();
-                                double iter2Mass = (*iter2)->getMass();
-                                // If iter1 is a star and iter2 is an asteroid, the force put on iter1 is
-                                // probably negligible and probably not worth calculating, so want the ratio
-                                // to be smaller when iter1 is larger
-                                double massRatio = iter2Mass / iter1Mass;
-                                // If iter1 is NOT massively larger than iter2, continue
-                                if (massRatio > 0.001) {
-                                    double sqDist = iter1Pos.squareDist(iter2Pos);
-//                                    std::cout << "sqDist: " << sqDist << ", iter1Mass: " << iter1Mass << ", iter2Mass: " << iter2Mass
-//                                              << "\nmassRatio: " << massRatio << ", f: " << massRatio / sqDist
-//                                              << "\n\n";
-                                    // If the two bodies are relatively close, continue
-                                    if (sqDist < 1000000) {
-                                        // Calculate gravitational force exerted on body and update velocity
-                                        // vel += (G * mass2 * (pos2 - pos 1)) / (dist ^ 3)
-                                        // Converted to my Vector notation:
-                                        // vel += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
-                                        double dist = iter2Pos.distance(iter1Pos);
-                                        if (dist < 1) dist = 1;
-                                        Vector iter2PosCopy;
-                                        iter2PosCopy.set(iter2Pos);
-                                        (*iter1)->setVel( // Set velocity
-                                            (*iter1)->getVel().add( // Add following to current velocity
-                                                (iter2PosCopy.sub(iter1Pos)).scale( // (pos2 - pos1) scaled by
-                                                    G * (*iter2)->getMass() / // G * mass2 divided by
-                                                        pow(dist, 3)) // (dist^3)
-                                            )
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            for (int i = 0; i < numThreads; i++) {
+                // Create batch of bodies for this thread
+                // Index of the last body in the batch of bodies
+                int endIndex = static_cast<int>(fmin(numBodies, BODIES_PER_THREAD));
+                // Iterator of end of batch of bodies
+                auto end = std::next(start, endIndex);
+                // Create thread and run tick; Add to threads list
+                threads.push_back(std::thread(&Simulation::tick, this, start, std::ref(end)));
+                // Start of next list = end of this list
+                start = end;
+                numBodies -= endIndex;
             }
-            if (mode == Exploration && rocket->isActive()) {
+            // Wait for all threads to finish
+            for (auto &t : threads) {
+                t.join();
+            }
+
+            if (rocket && mode == Exploration && rocket->isActive()) {
                 // W held down? --> Accelerate
                 if (rocket->isFiring()) rocket->accelerate();
                 // A held down? --> Rotate anti-clockwise
@@ -585,13 +406,234 @@ void Simulation::run() {
         tickEndTime = std::chrono::high_resolution_clock::now();
         tickElapsedTime = tickEndTime - tickStartTime;
         //std::cout << tickElapsedTime.count() << std::endl;
-        while(tickElapsedTime.count() < 16.6) {
+        while(tickElapsedTime.count() < 16) {
             //std::cout << "sleeping: " << tickElapsedTime.count() << std::endl << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             tickEndTime = std::chrono::high_resolution_clock::now();
             tickElapsedTime = tickEndTime - tickStartTime;
         }
+        loopCount++;
         std::cout << "Ticks per second = " << 1000 / tickElapsedTime.count() << std::endl;
+        //std::cout << "Size = " << bodies.size() << std::endl;
+    }
+}
+
+/**
+ * @brief Simulation::tick Performs one tick of processing on the bodies
+ * contained in bodiesBatch.
+ * @param bodiesBatch The list of bodies to update
+ */
+void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterator end) {
+    // Create some frequently used variables
+    Vector iter1Pos, iter2Pos, iter2PosCopy;
+    int imgWidth, imgHeight;
+    double iter1X, iter1Y, iter1Diam, iter2X, iter2Y, iter2Diam, iter1Mass,
+            iter2Mass, massRatio, sqDist, dist, minX, minY, x1, x2, y1, y2;
+    bool collision = false;
+    QPixmap sprite1, sprite2;
+    QImage spriteImage1, spriteImage2;
+    // For each body
+    for (std::list<Body*>::iterator iter1 = start, end1 = end; iter1 != end1; ++iter1) {
+        iter1Pos = (*iter1)->getPos();
+        iter1X = iter1Pos.getX();
+        iter1Y = iter1Pos.getY();
+        iter1Diam = (*iter1)->getDiameter();
+        iter1Mass = (*iter1)->getMass();
+        // For each other body
+        for (std::list<Body*>::iterator iter2 = bodies.begin(), end2 = bodies.end(); iter2 != end2; ++iter2) {
+            iter2Pos = (*iter2)->getPos();
+            iter2X = iter2Pos.getX();
+            iter2Y = iter2Pos.getY();
+            // Make sure the two bodies are not the same and that they are both active
+            if (iter1 != iter2 && (*iter1)->isActive() && (*iter2)->isActive()) {
+                // Initialise frequently used variables
+                iter2Diam = (*iter2)->getDiameter();
+
+                // If collision (dist between is less than half the sum of their diameters)
+                //if ((*iter1)->getPos().squareDist((*iter2)->getPos()) <
+                //        pow((*iter1)->getDiameter() / 2, 2) + pow((*iter2)->getDiameter() / 2, 2)) {
+
+                collision = false;
+                // Are the bodies even remotely close to each other?
+                if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < 500) {
+                    // Assuming the two bodies are rectangles, do they overlap?
+                    if (fabs(iter1X - iter2X) < ((iter1Diam + iter2Diam) / 2)
+                            && fabs(iter1Y - iter2Y) < ((iter1Diam + iter2Diam) / 2)) {
+                        // The rectangles overlap --> Is either body on screen?
+                        // Zoomed out too far     --> Accurate collision detection not important, good enough
+                        // Both off screen        --> Good enough
+                        // One or both on screen  --> Further checks
+                        if (scale > 0.3
+                              && ((*iter1)->isWithin(*visibleRegion)
+                              || (*iter2)->isWithin(*visibleRegion))) {
+                            // On screen --> Check if sprites overlap
+
+                            // Get the sprites of the bodies
+                            if ((*iter1)->getType() == Body::PlayerRocket) {
+                                sprite1 = sprites.rocketIdleImage;
+                                sprite2 = sprites.getImage(*iter2);
+                            } else if ((*iter2)->getType() == Body::PlayerRocket) {
+                                sprite1 = sprites.getImage(*iter1);
+                                sprite2 = sprites.rocketIdleImage;
+                            } else {
+                                sprite1 = sprites.getImage(*iter1);
+                                sprite2 = sprites.getImage(*iter2);
+                            }
+                            // Resize the sprites so they're as big as they are on screen
+                            sprite1 = sprite1.scaled(static_cast<int>(iter1Diam * scale),
+                                                     static_cast<int>(iter1Diam * scale));
+                            sprite2 = sprite2.scaled(static_cast<int>(iter2Diam * scale),
+                                                     static_cast<int>(iter2Diam * scale));
+
+                            // Image big enough for just the overlapping parts
+                            // One body's origin will be in one corner, the other in the opposite
+                            imgWidth = static_cast<int>(scale * fabs((iter1X - iter2X)));
+                            if (imgWidth <= 0) imgWidth = 1;
+                            imgHeight = static_cast<int>(scale * fabs((iter1Y - iter2Y)));
+                            if (imgHeight <= 0) imgHeight = 1;
+
+                            // The sprite images are QImages with the cropped and correctly placed sprites,
+                            // with any leftover background set to transparent
+                            // The sprite images are then combined (into spriteImage1) using
+                            // QPainter::CompositionMode_SourceIn to only display overlapping parts of the images
+                            spriteImage1 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
+                            spriteImage1.fill(QColor(0,0,0,0));
+                            spriteImage2 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
+                            spriteImage2.fill(QColor(0,0,0,0));
+
+                            // Minimums will be the coordinates of the top left of the image
+                            // Taking away the minimums from the bodies' coordinates will produce
+                            // their correct new coordinates for the overlap image
+                            minX = fmin(iter1X, iter2X);
+                            minY = fmin(iter1Y, iter2Y);
+                            // Calculate the coordinates where the images need to be drawn
+                            x1 = scale * (iter1X - minX);
+                            y1 = scale * (iter1Y - minY);
+                            x2 = scale * (iter2X - minX);
+                            y2 = scale * (iter2Y - minY);
+
+                            // Draw sprites into the spriteImages
+                            QPainter p1(&spriteImage1);
+                            // If we are drawing a rocket we need to rotate it to the correct angle
+                            if ((*iter1)->getType() == Body::PlayerRocket) {
+                                // Save state of the painter
+                                p1.save();
+                                // Move the painter to where the rocket is going to be drawn
+                                // (Want the centre of rotation to be the centre of the rocket)
+                                p1.translate(x1, y1);
+                                p1.rotate(rocket->getAngle());
+                                p1.drawImage(static_cast<int>(-scale * (iter1Diam / 2.0)),
+                                             static_cast<int>(-scale * (iter1Diam / 2.0)),
+                                             sprite1.toImage());
+                                // Restore state of the painter
+                                p1.restore();
+                            } else {
+                                p1.drawImage(static_cast<int>(x1 - scale * (iter1Diam / 2.0)),
+                                             static_cast<int>(y1 - scale * (iter1Diam / 2.0)),
+                                             sprite1.toImage());
+                            }
+
+                            QPainter p2(&spriteImage2);
+                            if ((*iter2)->getType() == Body::PlayerRocket) {
+                                p2.save();
+                                p2.translate(x2, y2);
+                                p2.rotate(rocket->getAngle());
+                                p2.drawImage(static_cast<int>(-scale * (iter2Diam / 2.0)),
+                                             static_cast<int>(-scale * (iter2Diam / 2.0)),
+                                             sprite2.toImage());
+                                p2.restore();
+                            } else {
+                                p2.drawImage(static_cast<int>(x2 - scale * (iter2Diam / 2.0)),
+                                             static_cast<int>(y2 - scale * (iter2Diam / 2.0)),
+                                             sprite2.toImage());
+                            }
+                            // Draw the spriteImages on top of each other and find any overlap
+                            p1.setCompositionMode(QPainter::CompositionMode_SourceIn);
+                            p1.drawImage(0, 0, spriteImage2);
+
+                            uchar *line;
+                            collision = false;
+                            QRgb pixel;
+                            // Scan through the image, if any pixels are not ARGB=00000000 then there was
+                            // some overlap --> collision has occurred
+                            for (int i = 0, height = spriteImage1.height(); i < height && !collision; i++) {
+                                // Look at each line
+                                line = spriteImage1.scanLine(i);
+                                for (int j = 0, width = spriteImage1.width(); j < width; j++) {
+                                    // Look at each pixel in line
+                                    pixel = static_cast<QRgb>(line[static_cast<unsigned int>(j) * sizeof (QRgb)]);
+                                    if (pixel != 00000000) {
+                                        collision = true;
+                                        if ((*iter1)->getType() == Body::PlayerRocket
+                                                || (*iter2)->getType() == Body::PlayerRocket) {
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            collision = true;
+                        }
+                    }
+                }
+                // We are sure a collision has occurred --> Handle it
+                if (collision) {
+                    // Rocket shouldn't combine, it should explode instead
+                    if (mode == Exploration
+                            && ((*iter1)->getType() == Body::PlayerRocket
+                                || (*iter2)->getType() == Body::PlayerRocket)) {
+                        // std::cout << "ROCKET COLLISION" << std::endl;
+                        rocket->setVel(0, 0);
+                        rocket->setActive(false);
+                        rocket->setExploding(true);
+                    } else {
+                        // Combine the two colliding bodies, and mark the smaller body for removal
+                        if ((*iter1)->getMass() >= (*iter2)->getMass()) {
+                            (*iter1)->combine(*iter2);
+                            (*iter2)->setActive(false);
+                        } else {
+                            (*iter2)->combine(*iter1);
+                            (*iter1)->setActive(false);
+                        }
+                    }
+                } else {
+                    // Are the bodies even remotely close to each other?
+                    if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < 2000) {
+                        // Some optimisations to make sure it's worthwhile to calculate the gravitational forces
+                        // At very large distances the force is negligible
+                        iter2Mass = (*iter2)->getMass();
+                        // If iter1 is a star and iter2 is an asteroid, the force put on iter1 is
+                        // probably negligible and probably not worth calculating, so want the ratio
+                        // to be smaller when iter1 is larger
+                        massRatio = iter2Mass / iter1Mass;
+                        // If iter1 is NOT massively larger than iter2, continue
+                        if (massRatio > 0.001) {
+                            sqDist = iter1Pos.squareDist(iter2Pos);
+//                                    std::cout << "sqDist: " << sqDist << ", iter1Mass: " << iter1Mass << ", iter2Mass: " << iter2Mass
+//                                              << "\nmassRatio: " << massRatio << ", f: " << massRatio / sqDist
+//                                              << "\n\n";
+                            // If the two bodies are relatively close, continue
+                            if (sqDist < 1000000) {
+                                // Calculate gravitational force exerted on body and update velocity
+                                // vel += (G * mass2 * (pos2 - pos 1)) / (dist ^ 3)
+                                // Converted to my Vector notation:
+                                // vel += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
+                                dist = iter2Pos.distance(iter1Pos);
+                                if (dist < 1) dist = 1;
+                                iter2PosCopy.set(iter2Pos);
+                                (*iter1)->setVel( // Set velocity
+                                    (*iter1)->getVel().add( // Add following to current velocity
+                                        (iter2PosCopy.sub(iter1Pos)).scale( // (pos2 - pos1) scaled by
+                                            G * (*iter2)->getMass() / // G * mass2 divided by
+                                                pow(dist, 3)) // (dist^3)
+                                    )
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
