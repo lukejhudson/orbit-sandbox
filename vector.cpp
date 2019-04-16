@@ -78,9 +78,9 @@ void Vector::set(double x, double y) {
  * @brief Vector::set Sets both the x and y values to those in the given Vector.
  * @param v The Vector to copy the x and y values from
  */
-void Vector::set(Vector v) {
-    x = v.getX();
-    y = v.getY();
+void Vector::set(Vector *v) {
+    x = v->getX();
+    y = v->getY();
 }
 
 /**
@@ -88,8 +88,8 @@ void Vector::set(Vector v) {
  * @param v  The Vector to calculate the dot product with
  * @return The dot product of this Vector and the Vector v
  */
-double Vector::dot(Vector v) {
-    return (x * v.getX()) + (y * v.getY());
+double Vector::dot(Vector *v) {
+    return (x * v->getX()) + (y * v->getY());
 }
 
 /**
@@ -97,7 +97,7 @@ double Vector::dot(Vector v) {
  * @param s The scale factor to scale this Vector by
  * @return This Vector with the updated x and y values
  */
-Vector Vector::scale(double s) {
+Vector* Vector::scale(double s) {
     x *= s;
     y *= s;
     return this;
@@ -109,8 +109,8 @@ Vector Vector::scale(double s) {
  * @param v The Vector to calculate the distance between
  * @return The distance between this Vector and the Vector v
  */
-double Vector::distance(Vector v) {
-    return hypot(x - v.getX(), y - v.getY());
+double Vector::distance(Vector *v) {
+    return hypot(x - v->getX(), y - v->getY());
 }
 
 /**
@@ -119,8 +119,8 @@ double Vector::distance(Vector v) {
  * @param v The Vector to calculate the squared distance between
  * @return The squared distance between this Vector and the Vector v
  */
-double Vector::squareDist(Vector v) {
-    return pow(x - v.getX(), 2) + pow(y - v.getY(), 2);
+double Vector::squareDist(Vector *v) {
+    return pow(x - v->getX(), 2) + pow(y - v->getY(), 2);
 }
 
 /**
@@ -169,9 +169,9 @@ void Vector::unitVector() {
  * @param v The Vector to add to this Vector
  * @return This Vector with the updated x and y values
  */
-Vector Vector::add(Vector v) {
-    x += v.getX();
-    y += v.getY();
+Vector* Vector::add(Vector *v) {
+    x += v->getX();
+    y += v->getY();
     return this;
 }
 
@@ -181,7 +181,7 @@ Vector Vector::add(Vector v) {
  * @param y The y value to add
  * @return This Vector with the updated x and y values
  */
-Vector Vector::add(double x, double y) {
+Vector* Vector::add(double x, double y) {
     this->x += x;
     this->y += y;
     return this;
@@ -192,9 +192,9 @@ Vector Vector::add(double x, double y) {
  * @param v The Vector to subtract from this Vector
  * @return This Vector with the updated x and y values
  */
-Vector Vector::sub(Vector v) {
-    x -= v.getX();
-    y -= v.getY();
+Vector* Vector::sub(Vector *v) {
+    x -= v->getX();
+    y -= v->getY();
     return this;
 }
 
@@ -204,7 +204,7 @@ Vector Vector::sub(Vector v) {
  * @param y The y value to subtract
  * @return This Vector with the updated x and y values
  */
-Vector Vector::sub(double x, double y) {
+Vector* Vector::sub(double x, double y) {
     this->x -= x;
     this->y -= y;
     return this;
@@ -215,15 +215,15 @@ Vector Vector::sub(double x, double y) {
  * @param v The Vector to check against
  * @return True if the two Vectors are equal
  */
-bool Vector::equals(Vector v) {
-    return isEqual(x, v.getX()) && isEqual(y, v.getY());
+bool Vector::equals(Vector *v) {
+    return isEqual(x, v->getX()) && isEqual(y, v->getY());
 }
 
 /**
  * @brief Vector::copy Returns a copy of this Vector.
  * @return A copy of this Vector
  */
-Vector Vector::copy() {
+Vector* Vector::copy() {
     return new Vector(x, y);
 }
 

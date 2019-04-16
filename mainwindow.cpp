@@ -471,7 +471,7 @@ void MainWindow::createControlsScreen() {
                                "Once you have chosen your celestial body, click and drag on the screen to spawn and fling it. "
                                "The further you drag, the greater the body's velocity as it spawns.");
     csSandboxText->setWordWrap(true);
-    csSandboxText->setMinimumHeight(100);
+    csSandboxText->setMinimumHeight(120);
     csvSandboxLayout->addWidget(csSandboxText, 0, Qt::AlignCenter);
     csvLayout->addWidget(csSandboxContainer, 0, Qt::AlignCenter);
 
@@ -487,7 +487,7 @@ void MainWindow::createControlsScreen() {
                                    "Use the A and D keys to rotate the rocket anti-clockwise and clockwise respectively. Fly the "
                                    "rocket around to explore the procedurally generated universe, but try not to crash!");
     csExplorationText->setWordWrap(true);
-    csExplorationText->setMinimumHeight(100);
+    csExplorationText->setMinimumHeight(120);
     csvExplorationLayout->addWidget(csExplorationText, 0, Qt::AlignCenter);
     csvLayout->addWidget(csExplorationContainer, 0, Qt::AlignCenter);
 

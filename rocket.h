@@ -6,11 +6,10 @@
 class Rocket : public Body {
 public:
     Rocket();
-    Rocket(Vector pos, Vector vel);
-    Rocket(Vector pos, Vector vel, bool firing, bool exploding,
+    Rocket(Vector *pos, Vector *vel);
+    Rocket(Vector *pos, Vector *vel, bool firing, bool exploding,
            int explodingCount, bool rotatingAntiCW, bool rotatingCW,
            int angle);
-    virtual ~Rocket();
 
     bool isFiring();
     void setFiring(bool firing);

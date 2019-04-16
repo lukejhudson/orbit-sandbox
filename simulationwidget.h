@@ -8,6 +8,7 @@ class SimulationWidget : public QWidget {
     Q_OBJECT
 public:
     SimulationWidget(Simulation *sim, Sprites sprites);
+    ~SimulationWidget() override;
     void setSpawnType(Body::BodyType type);
 
 signals:
@@ -24,6 +25,7 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    QTimer *timer;
     Simulation *sim;
     Sprites sprites;
     Body *newBody;

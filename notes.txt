@@ -1,18 +1,5 @@
 TODO: 
-	VALGRIND
-
 	Hopefully can just change the speed of the central body later to make everything orbit a SMBH
-
-	Need more optimisations, probably need to break apart the main O(n^2) loop
-		Have some house keeping to keep track of what "sector" each body is in?
-		Lower tick rate for bodies far off screen?
-			May cause some problems since calculations would be less accurate
-		Separate loop for each body type?
-			Collision detection and moving for all, then gravity calculations with several different loops?
-		Need to figure out what is making it so slow
-			Gravity calculations seem fine
-			Might just be the n^2 loop
-	Ideally, parallelise and run main loop on gpu
 	
 	Start zoomed in
 		Start how it is now, but zoom in slowly and smoothly
@@ -176,6 +163,9 @@ CHANGELOG:
 		Parallelisation
 			Several threads are created to handle the main n^2 loop in the Simulation
 			Currently 50 bodies are handled per thread
+
+	16/4
+	Used Valgrind to sort out many memory errors.
 
 
 

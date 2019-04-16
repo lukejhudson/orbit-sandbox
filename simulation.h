@@ -25,6 +25,7 @@ public:
     };
 
     Simulation(Sprites sprites);
+    ~Simulation();
     void resetSim();
     void spawnPlanetarySystem(Body* central, bool spawnRocket);
     void spawnPlanetarySystem(double x, double y, double dx, double dy, bool spawnRocket);
@@ -46,6 +47,7 @@ public:
 private:
     void calculateOrbitVelocity(Body *newBody, Body *central, int maxOrbitDistance);
     void tick(std::list<Body*>::iterator start, std::list<Body*>::iterator end);
+    void deleteBodies();
 
     double G = G_DEFAULT;
 
@@ -58,7 +60,7 @@ private:
     QRect *visibleRegion;
 
     Mode mode = Sandbox;
-    Rocket *rocket;
+    Rocket *rocket = nullptr;
 
     // An image of where the use has explored in Exploration mode
     QImage *exploredMap = nullptr;

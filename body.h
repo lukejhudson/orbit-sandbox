@@ -23,25 +23,25 @@ public:
     };
 
     Body();
-    Body(double mass, double diam, Vector pos, Vector vel, BodyType type, int planetType);
+    Body(double mass, double diam, Vector *pos, Vector *vel, BodyType type, int planetType);
     Body(BodyType);
-    virtual ~Body();
+    ~Body();
 
     double getMass();
     void setMass(double m);
     double getDiameter();
     void setDiameter(double d);
-    Vector getPos() const;
+    Vector* getPos() const;
     double getX();
     double getY();
-    Vector getVel() const;
+    Vector* getVel() const;
     double getVelX();
     double getVelY();
-    void setPos(Vector v);
+    void setPos(Vector *v);
     void setPos(double x, double y);
     void setX(double x);
     void setY(double y);
-    void setVel(Vector v);
+    void setVel(Vector *v);
     void setVel(double x, double y);
     void setVelX(double x);
     void setVelY(double y);
@@ -61,8 +61,8 @@ public:
 protected:
     double mass;
     double diameter;
-    Vector pos;
-    Vector vel;
+    Vector *pos;
+    Vector *vel;
     BodyType type; // What does the body represent?
     bool active; // Should the body interact with other bodies?
 

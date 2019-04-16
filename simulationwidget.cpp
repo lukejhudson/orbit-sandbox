@@ -24,9 +24,22 @@ SimulationWidget::SimulationWidget(Simulation *sim, Sprites sprites) {
     sim->resetSim();
 
     // Start a timer to be used to render at 60 fps
-    QTimer *timer = new QTimer(this);
+    timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(update()));
     timer->start(1000/60);
+}
+
+/**
+ * @brief SimulationWidget::~SimulationWidget Destructor.
+ */
+SimulationWidget::~SimulationWidget() {
+    delete initialMousePos;
+    delete mousePos;
+    delete currentOffset;
+    delete backgroundOffset;
+    delete newOffset;
+    delete totalBackgrounds;
+    delete timer;
 }
 
 /**
@@ -373,6 +386,7 @@ void SimulationWidget::paintEvent(QPaintEvent *) {
         delete *iter;
     }
     delete bodies;
+    delete rocketCopy;
 
     // Draw the map showing where the rocket has explored
 //    QImage *map = sim->getMap();

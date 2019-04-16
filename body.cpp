@@ -9,8 +9,8 @@
 Body::Body() {
     mass = -1;
     diameter = -1;
-    pos = new Vector(-1, -1);
-    vel = new Vector(-1, -1);
+    pos = nullptr;
+    vel = nullptr;
     type = Asteroid;
     active = true;
 }
@@ -23,7 +23,7 @@ Body::Body() {
  * @param vel Velocity Vector of body
  * @param type Type of body (see Body::BodyType)
  */
-Body::Body(double mass, double diam, Vector pos, Vector vel, BodyType type, int planetType) {
+Body::Body(double mass, double diam, Vector *pos, Vector *vel, BodyType type, int planetType) {
     this->mass = mass;
     this->diameter = diam;
     this->pos = pos;
@@ -83,7 +83,13 @@ Body::Body(BodyType type) {
     active = true;
 }
 
-Body::~Body() {}
+/**
+ * @brief Body::~Body Destructor.
+ */
+Body::~Body() {
+    delete pos;
+    delete vel;
+}
 
 /**
  * @brief Body::getMass
@@ -121,7 +127,7 @@ void Body::setDiameter(double d) {
  * @brief Body::getPos
  * @return The position Vector of the body
  */
-Vector Body::getPos() const {
+Vector* Body::getPos() const {
     return pos;
 }
 
@@ -130,7 +136,7 @@ Vector Body::getPos() const {
  * @return The x-coordinate of the body
  */
 double Body::getX() {
-    return pos.getX();
+    return pos->getX();
 }
 
 /**
@@ -138,14 +144,14 @@ double Body::getX() {
  * @return The y-coordinate of the body
  */
 double Body::getY() {
-    return pos.getY();
+    return pos->getY();
 }
 
 /**
  * @brief Body::getVel
  * @return The velocity Vector of the body
  */
-Vector Body::getVel() const {
+Vector* Body::getVel() const {
     return vel;
 }
 
@@ -154,7 +160,7 @@ Vector Body::getVel() const {
  * @return The x-velocity of the body
  */
 double Body::getVelX() {
-    return vel.getX();
+    return vel->getX();
 }
 
 /**
@@ -162,14 +168,14 @@ double Body::getVelX() {
  * @return The y-velocity of the body
  */
 double Body::getVelY() {
-    return vel.getY();
+    return vel->getY();
 }
 
 /**
  * @brief Body::setPos
  * @param v New position Vector of the body
  */
-void Body::setPos(Vector v) {
+void Body::setPos(Vector *v) {
     pos = v;
 }
 
@@ -179,8 +185,8 @@ void Body::setPos(Vector v) {
  * @param y New y-coordinate of the body
  */
 void Body::setPos(double x, double y) {
-    pos.setX(x);
-    pos.setY(y);
+    pos->setX(x);
+    pos->setY(y);
 }
 
 /**
@@ -188,7 +194,7 @@ void Body::setPos(double x, double y) {
  * @param x New x-coordinate of the body
  */
 void Body::setX(double x) {
-    pos.setX(x);
+    pos->setX(x);
 }
 
 /**
@@ -196,14 +202,14 @@ void Body::setX(double x) {
  * @param y New y-coordinate of the body
  */
 void Body::setY(double y) {
-    pos.setY(y);
+    pos->setY(y);
 }
 
 /**
  * @brief Body::setVel
  * @param v New velocity Vector of the body
  */
-void Body::setVel(Vector v) {
+void Body::setVel(Vector *v) {
     vel = v;
 }
 
@@ -213,8 +219,8 @@ void Body::setVel(Vector v) {
  * @param y New y-velocity of the body
  */
 void Body::setVel(double x, double y) {
-    vel.setX(x);
-    vel.setY(y);
+    vel->setX(x);
+    vel->setY(y);
 }
 
 /**
@@ -222,7 +228,7 @@ void Body::setVel(double x, double y) {
  * @param x New x-velocity of the body
  */
 void Body::setVelX(double x) {
-    vel.setX(x);
+    vel->setX(x);
 }
 
 /**
@@ -230,7 +236,7 @@ void Body::setVelX(double x) {
  * @param y New y-velocity of the body
  */
 void Body::setVelY(double y) {
-    vel.setY(y);
+    vel->setY(y);
 }
 
 /**
@@ -289,7 +295,7 @@ void Body::setActive(bool b) {
  * Vector to its position Vector.
  */
 void Body::move() {
-    pos.add(vel);
+    pos->add(vel);
 }
 
 /**
@@ -304,11 +310,11 @@ void Body::combine(Body *b) {
     // m1v1 + m2v2 = m3v3 = (m1+m2)v3
     // v3 = (m1v1 + m2v2) / (m1 + m2)
     double vx, vy, bMass = b->getMass();
-    vx = (mass * vel.getX() + bMass * b->getVelX()) /
+    vx = (mass * vel->getX() + bMass * b->getVelX()) /
             (mass + bMass);
-    vy = (mass * vel.getY() + bMass * b->getVelY()) /
+    vy = (mass * vel->getY() + bMass * b->getVelY()) /
             (mass + bMass);
-    vel.set(vx, vy);
+    vel->set(vx, vy);
     // Consume mass
     mass += bMass;
     //std::cout << "   Diam after: " << diameter << ", vel: " << vel.toString() << std::endl;
@@ -319,7 +325,7 @@ void Body::combine(Body *b) {
  * @return A copy of this Body
  */
 Body* Body::copy() {
-    return new Body(mass, diameter, pos.copy(), vel.copy(), type, planetType);
+    return new Body(mass, diameter, pos->copy(), vel->copy(), type, planetType);
 }
 
 /**
@@ -328,7 +334,7 @@ Body* Body::copy() {
  * @return A string representation of the body
  */
 std::string Body::toString() {
-    return "pos: " + pos.toString() + ", vel: " + vel.toString();
+    return "pos: " + pos->toString() + ", vel: " + vel->toString();
 }
 
 /**
@@ -338,8 +344,8 @@ std::string Body::toString() {
  * @return True if the two bodies are the sames
  */
 bool Body::operator==(const Body& rhs) {
-    return this->getPos().equals(rhs.getPos())
-            && this->getVel().equals(rhs.getVel());
+    return this->getPos()->equals(rhs.getPos())
+            && this->getVel()->equals(rhs.getVel());
 }
 
 /**
@@ -352,7 +358,7 @@ bool Body::operator==(const Body& rhs) {
  */
 bool Body::isWithin(QRect rect) {
     double radius = diameter / 2.0;
-    double posX = pos.getX(), posY = pos.getY();
+    double posX = pos->getX(), posY = pos->getY();
 
     return (posX + radius >= rect.x()
             && posX - radius <= rect.x() + rect.width()

@@ -24,7 +24,7 @@ Rocket::Rocket() {
  * @param pos The rocket's position Vector
  * @param vel The rocket's velocity Vector
  */
-Rocket::Rocket(Vector pos, Vector vel) {
+Rocket::Rocket(Vector *pos, Vector *vel) {
     mass = MASS;
     diameter = DIAMETER;
     this->pos = pos;
@@ -34,7 +34,7 @@ Rocket::Rocket(Vector pos, Vector vel) {
 }
 
 
-Rocket::Rocket(Vector pos, Vector vel, bool firing, bool exploding,
+Rocket::Rocket(Vector *pos, Vector *vel, bool firing, bool exploding,
                int explodingCount, bool rotatingAntiCW, bool rotatingCW,
                int angle) {
     mass = MASS;
@@ -51,7 +51,7 @@ Rocket::Rocket(Vector pos, Vector vel, bool firing, bool exploding,
     this->angle = angle;
 }
 
-Rocket::~Rocket() {}
+
 
 /**
  * @brief Rocket::isFiring Are the rocket's engines firing?
@@ -198,7 +198,7 @@ void Rocket::accelerate() {
         velocityVector.setY(-velocity * cos(angleRadians));
 
         // Add new velocity vector to current velocity vector
-        vel.add(velocityVector);
+        vel->add(&velocityVector);
     }
 }
 
@@ -208,7 +208,7 @@ void Rocket::accelerate() {
  * @return A copy of this Rocket
  */
 Rocket* Rocket::copy() {
-    return new Rocket(pos.copy(), vel.copy(), firing, exploding,
+    return new Rocket(pos->copy(), vel->copy(), firing, exploding,
                       explodingCount, rotatingAntiCW, rotatingCW,
                       angle);
 }

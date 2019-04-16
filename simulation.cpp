@@ -27,17 +27,34 @@ Simulation::Simulation(Sprites sprites) {
 }
 
 /**
- * @brief Simulation::resetSim Resets the simulation to default settings.
- * Removes all bodies and adds in the inital three.
+ * @brief Simulation::~Simulation Destructor.
  */
-void Simulation::resetSim() {
-    // Delete current bodies list
+Simulation::~Simulation() {
+    delete visibleRegion;
+    if (exploredMap) delete exploredMap;
+    deleteBodies();
+}
+
+/**
+ * @brief Simulation::deleteBodies Deletes all bodies in the bodies list
+ * and clears all elements in the list.
+ */
+void Simulation::deleteBodies() {
     mut.lock();
     for (std::list<Body*>::iterator iter = bodies.begin(); iter != bodies.end(); ++iter) {
         delete *iter;
     }
     mut.unlock();
     bodies.erase(bodies.begin(), bodies.end());
+}
+
+/**
+ * @brief Simulation::resetSim Resets the simulation to default settings.
+ * Removes all bodies and adds in the inital three.
+ */
+void Simulation::resetSim() {
+    // Delete current bodies list
+    deleteBodies();
     scale = 1;
     G = G_DEFAULT;
     // Spawn initial planetary system in the centre of the screen, along
@@ -81,7 +98,7 @@ void Simulation::calculateOrbitVelocity(Body *newBody, Body *central, int maxOrb
         newY = y + rand() % (2 * maxOrbitDistance) - maxOrbitDistance;
     }
     newBody->setPos(newX, newY);
-    Vector newBodyPos = newBody->getPos();
+    Vector *newBodyPos = newBody->getPos();
     // Calculate velocity of newBody
     // v = sqrt( (G * centralMass) / radius of orbit )
     double vel = sqrt((G * centralMass) / centralPos.distance(newBodyPos));
@@ -189,7 +206,7 @@ void Simulation::spawnPlanetarySystem(double x, double y, double dx, double dy, 
 void Simulation::spawnPlanetarySystem() {
     QRectF validSpawningRegion = calculateValidSpawningRegion();
     double newX, newY;
-    Vector *pos;
+    Vector pos;
     Body *central;
 
     // 10 attempts when zoomed all the way in, 110 all the way out
@@ -202,15 +219,15 @@ void Simulation::spawnPlanetarySystem() {
         // Calculate random pos, anywhere in the spawning region
         newX = validSpawningRegion.x() + rand() % static_cast<int>(validSpawningRegion.width());
         newY = validSpawningRegion.y() + rand() % static_cast<int>(validSpawningRegion.height());
-        pos = new Vector(newX, newY);
+        pos = Vector(newX, newY);
 
         // Calculate position on exploredMap and find if that pixel is blue (has been explored)
         if (static_cast<QRgb>(
                     exploredMap->pixel(
                         static_cast<int>((mapOffset.x() + mapDimensions.x() +
-                                          mapDimensions.width()) + pos->getX() / MAP_SCALE),
+                                          mapDimensions.width()) + pos.getX() / MAP_SCALE),
                         static_cast<int>((mapOffset.y() + mapDimensions.y() +
-                                          mapDimensions.height()) + pos->getY() / MAP_SCALE)))
+                                          mapDimensions.height()) + pos.getY() / MAP_SCALE)))
                 == QRgb(qRgb(0,0,255))) {
             // Area which we are trying to spawn at is invalid - it has been explored already
             // -> Failed attempt, break
@@ -235,7 +252,7 @@ void Simulation::spawnPlanetarySystem() {
                 type = (*iter)->getType();
                 // Make sure the new body doesn't overlap with any other system
                 if ((type == Body::Star || type == Body::WhiteDwarf || type == Body::BlackHole)
-                        && (*iter)->getPos().squareDist(pos) < pow(MAX_SYSTEM_ORBIT_RADIUS, 2) * 2) {
+                        && (*iter)->getPos()->squareDist(&pos) < pow(MAX_SYSTEM_ORBIT_RADIUS, 2) * 2) {
                     valid = false;
                 }
             }
@@ -265,7 +282,7 @@ std::list<Body*>* Simulation::getBodies() {
     Body *b;
     for (std::list<Body*>::iterator iter = bodies.begin(), end = bodies.end(); iter != end; ++iter) {
         if ((*iter)->getType() == Body::PlayerRocket) {
-            b = static_cast<Rocket*>((*iter))->copy();
+            b = static_cast<Rocket*>(*iter)->copy();
         } else {
             b = (*iter)->copy();
         }
@@ -402,18 +419,15 @@ void Simulation::run() {
             }
         }
         // Sleep to maintain ~60 ticks per second
-        //std::this_thread::sleep_for(std::chrono::milliseconds(16));
         tickEndTime = std::chrono::high_resolution_clock::now();
         tickElapsedTime = tickEndTime - tickStartTime;
-        //std::cout << tickElapsedTime.count() << std::endl;
         while(tickElapsedTime.count() < 16) {
-            //std::cout << "sleeping: " << tickElapsedTime.count() << std::endl << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             tickEndTime = std::chrono::high_resolution_clock::now();
             tickElapsedTime = tickEndTime - tickStartTime;
         }
         loopCount++;
-        std::cout << "Ticks per second = " << 1000 / tickElapsedTime.count() << std::endl;
+        //std::cout << "Ticks per second = " << 1000 / tickElapsedTime.count() << std::endl;
         //std::cout << "Size = " << bodies.size() << std::endl;
     }
 }
@@ -425,7 +439,8 @@ void Simulation::run() {
  */
 void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterator end) {
     // Create some frequently used variables
-    Vector iter1Pos, iter2Pos, iter2PosCopy;
+    Vector v;
+    Vector *iter1Pos, *iter2Pos, *iter2PosCopy = &v;
     int imgWidth, imgHeight;
     double iter1X, iter1Y, iter1Diam, iter2X, iter2Y, iter2Diam, iter1Mass,
             iter2Mass, massRatio, sqDist, dist, minX, minY, x1, x2, y1, y2;
@@ -435,15 +450,15 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
     // For each body
     for (std::list<Body*>::iterator iter1 = start, end1 = end; iter1 != end1; ++iter1) {
         iter1Pos = (*iter1)->getPos();
-        iter1X = iter1Pos.getX();
-        iter1Y = iter1Pos.getY();
+        iter1X = iter1Pos->getX();
+        iter1Y = iter1Pos->getY();
         iter1Diam = (*iter1)->getDiameter();
         iter1Mass = (*iter1)->getMass();
         // For each other body
         for (std::list<Body*>::iterator iter2 = bodies.begin(), end2 = bodies.end(); iter2 != end2; ++iter2) {
             iter2Pos = (*iter2)->getPos();
-            iter2X = iter2Pos.getX();
-            iter2Y = iter2Pos.getY();
+            iter2X = iter2Pos->getX();
+            iter2Y = iter2Pos->getY();
             // Make sure the two bodies are not the same and that they are both active
             if (iter1 != iter2 && (*iter1)->isActive() && (*iter2)->isActive()) {
                 // Initialise frequently used variables
@@ -608,7 +623,7 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
                         massRatio = iter2Mass / iter1Mass;
                         // If iter1 is NOT massively larger than iter2, continue
                         if (massRatio > 0.001) {
-                            sqDist = iter1Pos.squareDist(iter2Pos);
+                            sqDist = iter1Pos->squareDist(iter2Pos);
 //                                    std::cout << "sqDist: " << sqDist << ", iter1Mass: " << iter1Mass << ", iter2Mass: " << iter2Mass
 //                                              << "\nmassRatio: " << massRatio << ", f: " << massRatio / sqDist
 //                                              << "\n\n";
@@ -618,12 +633,12 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
                                 // vel += (G * mass2 * (pos2 - pos 1)) / (dist ^ 3)
                                 // Converted to my Vector notation:
                                 // vel += (pos2 - po1).scale(G * mass2 / (dist ^ 3))
-                                dist = iter2Pos.distance(iter1Pos);
+                                dist = iter2Pos->distance(iter1Pos);
                                 if (dist < 1) dist = 1;
-                                iter2PosCopy.set(iter2Pos);
+                                iter2PosCopy->set(iter2Pos);
                                 (*iter1)->setVel( // Set velocity
-                                    (*iter1)->getVel().add( // Add following to current velocity
-                                        (iter2PosCopy.sub(iter1Pos)).scale( // (pos2 - pos1) scaled by
+                                    (*iter1)->getVel()->add( // Add following to current velocity
+                                        (iter2PosCopy->sub(iter1Pos))->scale( // (pos2 - pos1) scaled by
                                             G * (*iter2)->getMass() / // G * mass2 divided by
                                                 pow(dist, 3)) // (dist^3)
                                     )
