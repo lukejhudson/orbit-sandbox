@@ -244,7 +244,7 @@ void MainWindow::createSandboxMode() {
     whitedwarfLabel->setFont(*labelFont);
     whitedwarfLabel->setWordWrap(true);
     whitedwarfLabel->setAlignment(Qt::AlignCenter);
-    whitedwarfLabel->setFixedHeight(25);
+    whitedwarfLabel->setFixedHeight(30);
     // Combine
     vWhitedwarfLayout->addWidget(whitedwarfButton);
     vWhitedwarfLayout->addWidget(whitedwarfLabel);
@@ -301,7 +301,7 @@ void MainWindow::createSandboxMode() {
     plansysLabel->setFont(*labelFont);
     plansysLabel->setWordWrap(true);
     plansysLabel->setAlignment(Qt::AlignCenter);
-    plansysLabel->setFixedHeight(25);
+    plansysLabel->setFixedHeight(30);
     // Combine
     vPlansysLayout->addWidget(plansysButton);
     vPlansysLayout->addWidget(plansysLabel);

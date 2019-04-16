@@ -165,7 +165,8 @@ CHANGELOG:
 			Currently 50 bodies are handled per thread
 
 	16/4
-	Used Valgrind to sort out many memory errors.
+	Used Valgrind to sort out many memory errors
+	Created README
 
 
 
