@@ -1,4 +1,18 @@
 TODO: 
+	Make click and drag less sensitive
+	Make arrow glow or snap or something when speed is correct for orbit
+	Make black holes more scary
+	Fix sun sprite
+	White dwarf shouldn't gain so much diam when combining
+	White dwarf collapse into black hole at certain diam
+	Rocket sometimes dies on spawn
+	Fuel meter in exploration mode
+	Icon for application
+	UI in exploration mode to show current velocity as vector/arrow and direction facing
+	Right click + drag camera
+	Not spawning enough stuff?
+	Speedometer
+
 	Hopefully can just change the speed of the central body later to make everything orbit a SMBH
 	
 	Start zoomed in
@@ -167,7 +181,7 @@ CHANGELOG:
 	16/4
 	Used Valgrind to sort out many memory errors
 	Created README
-
+	Added some more ddls to make windows exe work properly
 
 
 
