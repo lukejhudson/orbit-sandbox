@@ -23,7 +23,7 @@ In Exploration mode the player controls a rocket placed in the centre of the scr
 
 ![Exploration Mode - Controlling the Rocket](Screenshots/ExplorationMode2.png)
 
-Press and hold W to fire the rocket's engines and increase its velocity in the direction it is currently facing. Use the A and D keys to rotate the rocket anti-clockwise and clockwise respectively. 
+Press and hold W to fire the rocket's engines and increase its velocity in the direction it is currently facing. Use the A and D keys to rotate the rocket anti-clockwise and clockwise respectively. The panel in the bottom right of the screen shows the rocket's speed, angle and direction of travel. 
 
 ![Exploration Mode - Exploring the Universe](Screenshots/ExplorationMode3.png)
 
