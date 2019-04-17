@@ -32,6 +32,8 @@ TODO:
 
 BUGS:
 	Resizing a lot can cause crashes?
+	Collision detection ignoring the alpha channel (but not when using .pixelColor)
+	Bodies jittery again (due to mutex?
 
 CHANGELOG:
 	8/3
@@ -188,10 +190,11 @@ CHANGELOG:
 	When bodies combine, their diameter now increase proportionally to how much mass they are gaining
 		Previously hypot of both bodies' diams
 	Collisions now work properly when sprites are giant
-	Fixed an issue where collision detection was ignoring the alpha channel
+	Fixed an issue where black holes were occassionally not colliding correctly
 	Added an icon for the application
 	Can now drag the camera in Simulation mode using right click (previously just middle mouse button)
 	Added a panel in Exploration mode which shows the rocket's angle, speed and direction
+	Improved thread safety, so fewer segmentation faults
 
 
 	

@@ -412,14 +412,16 @@ void SimulationWidget::paintEvent(QPaintEvent *) {
         // Restore painter state
         p.restore();
         // Draw velocity direction arrow (similarly to rocket)
-        double angle = atan(rocketCopy->getVelY() / rocketCopy->getVelX()) * (180.0 / M_PI);
-        if (rocketCopy->getVelX() < 0) angle += 180;
-        p.save();
-        p.translate(coords.x() + panelSize.x() / 2, coords.y() + panelSize.y() / 2);
-        p.rotate(angle);
-        s = sprites.arrowIcon.scaled(rocketSize.x(), rocketSize.y());
-        p.drawPixmap(-rocketSize / 2, s);
-        p.restore();
+        if (rocket->isActive()) {
+            double angle = atan(rocketCopy->getVelY() / rocketCopy->getVelX()) * (180.0 / M_PI);
+            if (rocketCopy->getVelX() < 0) angle += 180;
+            p.save();
+            p.translate(coords.x() + panelSize.x() / 2, coords.y() + panelSize.y() / 2);
+            p.rotate(angle);
+            s = sprites.arrowIcon.scaled(rocketSize.x(), rocketSize.y());
+            p.drawPixmap(-rocketSize / 2, s);
+            p.restore();
+        }
     }
 
     // Delete copy of bodies list

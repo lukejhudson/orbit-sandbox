@@ -379,7 +379,7 @@ void Simulation::run() {
 
             // Iterator of start of batch of bodies
             auto start = bodies.begin();
-
+            mut.lock();
             for (int i = 0; i < numThreads; i++) {
                 // Create batch of bodies for this thread
                 // Index of the last body in the batch of bodies
@@ -396,6 +396,7 @@ void Simulation::run() {
             for (auto &t : threads) {
                 t.join();
             }
+            mut.unlock();
 
             if (rocket && mode == Exploration && rocket->isActive()) {
                 // W held down? --> Accelerate
