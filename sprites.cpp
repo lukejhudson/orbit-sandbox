@@ -27,7 +27,7 @@ Sprites::Sprites() {
     char planet5Path[] = "/sprites/planet5.png";
     planet5Image = loadImage(planet5Path);
 
-    char starPath[] = "/sprites/star.png";
+    char starPath[] = "/sprites/star2.png";
     starImage = loadImage(starPath);
 
     char whitedwarfPath[] = "/sprites/whitedwarf.png";
@@ -47,6 +47,9 @@ Sprites::Sprites() {
 
     char rocketExplosionPath[] = "/sprites/rocketexplosion.png";
     rocketExplosionSpriteSheet = loadImage(rocketExplosionPath);
+
+    char arrowPath[] = "/icons/arrow.png";
+    arrowIcon = loadImage(arrowPath);
 }
 
 /**

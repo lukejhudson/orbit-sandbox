@@ -85,7 +85,7 @@ void SimulationWidget::mousePressEvent(QMouseEvent *event) {
         mousePos->setX(event->x() / scale);
         mousePos->setY(event->y() / scale);
         spawning = true;
-    } else if (event->button() == Qt::MiddleButton && sim->getMode() == Simulation::Sandbox) {
+    } else if ((event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) && sim->getMode() == Simulation::Sandbox) {
         // Adjust window offset so that the simulation screen can be moved around
         // when the middle mouse button is held
         mousePos->setX(event->x() / scale);
@@ -111,8 +111,8 @@ void SimulationWidget::mouseReleaseEvent(QMouseEvent *event) {
         if (spawning) {
             //std::cout << "Release left click: " << event->x() << ", " << event->y() << std::endl;
             spawning = false;
-            double vx = 0.1 * (newBody->getX() - (event->x() / scale) - currentOffset->x());
-            double vy = 0.1 * (newBody->getY() - (event->y() / scale) - currentOffset->y());
+            double vx = 0.05 * (newBody->getX() - (event->x() / scale) - currentOffset->x());
+            double vy = 0.05 * (newBody->getY() - (event->y() / scale) - currentOffset->y());
             newBody->setVel(vx, vy);
             if (spawnType != Body::PlanetarySystem) {
                 sim->addBody(newBody);
@@ -120,7 +120,7 @@ void SimulationWidget::mouseReleaseEvent(QMouseEvent *event) {
                 sim->spawnPlanetarySystem(newBody, false);
             }
         }
-    } else if (event->button() == Qt::MiddleButton && sim->getMode() == Simulation::Sandbox) {
+    } else if ((event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) && sim->getMode() == Simulation::Sandbox) {
         movingCamera = false;
         *currentOffset += *newOffset;
         if (scale > 1) {
@@ -381,6 +381,47 @@ void SimulationWidget::paintEvent(QPaintEvent *) {
                          sprites.getImage(*iter));
         }
     }
+
+    // Draw rocket angle, direction and speed
+    if (sim->getMode() == Simulation::Exploration) {
+        QPoint panelSize(100, 100); // Size of the panel
+        QPoint rocketSize(panelSize.x() - 10, panelSize.y() - 10); // Size of rocket
+        QPoint coords(5, height() - panelSize.y() - 5); // Top left coords of the panel
+        // Draw grey background
+        p.fillRect(coords.x(), coords.y(), panelSize.x(), panelSize.y(), QColor(50, 50, 50));
+        // Draw rocket speed
+        QString speedText = QString::number(rocketCopy->getVel()->getNormal(), 'g', 4);
+        p.drawText(coords, QString("Speed: ") + speedText);
+        // Save painter state
+        p.save();
+        // Position painter at the centre of the panel location
+        p.translate(coords.x() + panelSize.x() / 2, coords.y() + panelSize.y() / 2);
+        // Rotate painter to rocket's angle
+        p.rotate(rocketCopy->getAngle());
+        // Get correct sprite
+        QPixmap s;
+        if (rocketCopy->isFiring()) {
+            s = sprites.rocketFiringImage;
+        } else {
+            s = sprites.rocketIdleImage;
+        }
+        // Resize sprite
+        s = s.scaled(rocketSize.x(), rocketSize.y());
+        // Draw sprite
+        p.drawPixmap(-rocketSize / 2, s);
+        // Restore painter state
+        p.restore();
+        // Draw velocity direction arrow (similarly to rocket)
+        double angle = atan(rocketCopy->getVelY() / rocketCopy->getVelX()) * (180.0 / M_PI);
+        if (rocketCopy->getVelX() < 0) angle += 180;
+        p.save();
+        p.translate(coords.x() + panelSize.x() / 2, coords.y() + panelSize.y() / 2);
+        p.rotate(angle);
+        s = sprites.arrowIcon.scaled(rocketSize.x(), rocketSize.y());
+        p.drawPixmap(-rocketSize / 2, s);
+        p.restore();
+    }
+
     // Delete copy of bodies list
     for (std::list<Body*>::iterator iter = bodies->begin(), end = bodies->end(); iter != end; ++iter) {
         delete *iter;

@@ -1,17 +1,11 @@
 TODO: 
-	Make click and drag less sensitive
-	Make arrow glow or snap or something when speed is correct for orbit
-	Make black holes more scary
-	Fix sun sprite
-	White dwarf shouldn't gain so much diam when combining
-	White dwarf collapse into black hole at certain diam
+	Not spawning enough stuff in exploration mode?
 	Rocket sometimes dies on spawn
+
+	Make arrow glow or snap or something when speed is correct for orbit
+		How do you know what object the user is trying to orbit?
+	White dwarf collapse into black hole at certain diam
 	Fuel meter in exploration mode
-	Icon for application
-	UI in exploration mode to show current velocity as vector/arrow and direction facing
-	Right click + drag camera
-	Not spawning enough stuff?
-	Speedometer
 
 	Hopefully can just change the speed of the central body later to make everything orbit a SMBH
 	
@@ -182,7 +176,25 @@ CHANGELOG:
 	Used Valgrind to sort out many memory errors
 	Created README
 	Added some more ddls to make windows exe work properly
+	Got some feedback/ideas from Ian
 
+	17/4
+	Made click and drag less sensitive in Sandbox mode
+		Need to drag more to get the same speed
+	Made black holes more scary
+		10000 mass --> 25000
+		Reduced diameter since in reality they're insanely dense
+	Updated sun sprite
+	When bodies combine, their diameter now increase proportionally to how much mass they are gaining
+		Previously hypot of both bodies' diams
+	Collisions now work properly when sprites are giant
+	Fixed an issue where collision detection was ignoring the alpha channel
+	Added an icon for the application
+	Can now drag the camera in Simulation mode using right click (previously just middle mouse button)
+	Added a panel in Exploration mode which shows the rocket's angle, speed and direction
+
+
+	
 
 
 

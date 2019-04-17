@@ -13,6 +13,7 @@ public:
 
     QPixmap invalidImage;
     QPixmap backgroundImage;
+    QPixmap arrowIcon;
 
     QPixmap asteroidImage;
     QPixmap planet1Image;

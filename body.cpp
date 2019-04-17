@@ -69,10 +69,10 @@ Body::Body(BodyType type) {
             diameter = 5 + std::rand() % 11;
             break;
         case BlackHole:
-            // Mass = 1250 +- 2500
-            mass = 10000 + std::rand() % 5001;
-            // Diam = 50 +/- 12
-            diameter = 38 + std::rand() % 25;
+            // Mass = 30000 +- 5000
+            mass = 25000 + std::rand() % 10001;
+            // Diam = 25 +/- 5
+            diameter = 20 + std::rand() % 11;
             break;
     }
     //std::cout << "Type: " << type << "\tMass: " << mass << "\tDiam: " << diameter << std::endl;
@@ -303,9 +303,12 @@ void Body::move() {
  * @param b The Body to combine to this Body
  */
 void Body::combine(Body *b) {
-    //std::cout << "Diam before: " << diameter << ", vel: " << vel.toString() << ", " << b->getVel().toString();
     // Grow size proportionally to the size of the body consumed
-    diameter = hypot(diameter, b->getDiameter());
+    //diameter = hypot(diameter, b->getDiameter());
+//    std::cout << "Calculation: diam *= 1 + (b->getMass() / diameter) / (mass / diameter)\n"
+//              << diameter << " *= 1 + (" << b->getMass() << " / " << diameter << ") / (" << mass << " / " << diameter << ") = 1 + " << (b->getMass() / diameter) / (mass / diameter) << std::endl;
+    diameter *= 1 + (0.5 * b->getMass() / diameter) / (mass / diameter);
+    //std::cout << "Diam = " << diameter << std::endl << std::endl;
     // 2x 1D momentum calculations
     // m1v1 + m2v2 = m3v3 = (m1+m2)v3
     // v3 = (m1v1 + m2v2) / (m1 + m2)
@@ -317,7 +320,6 @@ void Body::combine(Body *b) {
     vel->set(vx, vy);
     // Consume mass
     mass += bMass;
-    //std::cout << "   Diam after: " << diameter << ", vel: " << vel.toString() << std::endl;
 }
 
 /**

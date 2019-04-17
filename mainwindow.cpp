@@ -12,6 +12,8 @@ MainWindow::MainWindow() {
     resize(1000, 660);
     setMinimumSize(1000, 660);
 
+    setWindowIcon(QIcon(QDir::currentPath() + "/sprites/plansys.png"));
+
     sim = new Simulation(*sprites);
 
     titleFont = new QFont("Fantasy", 70, QFont::Bold);
@@ -205,7 +207,7 @@ void MainWindow::createSandboxMode() {
     vStarLayout->setMargin(0);
     // Button
     starButton = new QPushButton(sbContainer);
-    starButton->setIcon(QIcon(QDir::currentPath() + "/sprites/star.png"));
+    starButton->setIcon(QIcon(QDir::currentPath() + "/sprites/star2.png"));
     starButton->setIconSize(QSize(40, 40));
     starButton->setAutoFillBackground(true);
     starButton->setPalette(QPalette(QColor(255,255,255)));

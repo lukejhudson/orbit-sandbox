@@ -470,7 +470,7 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
 
                 collision = false;
                 // Are the bodies even remotely close to each other?
-                if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < 500) {
+                if (fabs(iter1X - iter2X) + fabs(iter1Y - iter2Y) < iter1Diam + iter2Diam) {
                     // Assuming the two bodies are rectangles, do they overlap?
                     if (fabs(iter1X - iter2X) < ((iter1Diam + iter2Diam) / 2)
                             && fabs(iter1Y - iter2Y) < ((iter1Diam + iter2Diam) / 2)) {
@@ -511,9 +511,9 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
                             // with any leftover background set to transparent
                             // The sprite images are then combined (into spriteImage1) using
                             // QPainter::CompositionMode_SourceIn to only display overlapping parts of the images
-                            spriteImage1 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
+                            spriteImage1 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32);
                             spriteImage1.fill(QColor(0,0,0,0));
-                            spriteImage2 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
+                            spriteImage2 = QImage(imgWidth, imgHeight, QImage::Format_ARGB32);
                             spriteImage2.fill(QColor(0,0,0,0));
 
                             // Minimums will be the coordinates of the top left of the image
@@ -573,15 +573,12 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
                             // some overlap --> collision has occurred
                             for (int i = 0, height = spriteImage1.height(); i < height && !collision; i++) {
                                 // Look at each line
-                                line = spriteImage1.scanLine(i);
+                                line = (spriteImage1.scanLine(i));
                                 for (int j = 0, width = spriteImage1.width(); j < width; j++) {
                                     // Look at each pixel in line
                                     pixel = static_cast<QRgb>(line[static_cast<unsigned int>(j) * sizeof (QRgb)]);
-                                    if (pixel != 00000000) {
+                                    if (pixel != qRgba(0,0,0,0)) {
                                         collision = true;
-                                        if ((*iter1)->getType() == Body::PlayerRocket
-                                                || (*iter2)->getType() == Body::PlayerRocket) {
-                                        }
                                         break;
                                     }
                                 }
@@ -597,7 +594,6 @@ void Simulation::tick(std::list<Body*>::iterator start, std::list<Body*>::iterat
                     if (mode == Exploration
                             && ((*iter1)->getType() == Body::PlayerRocket
                                 || (*iter2)->getType() == Body::PlayerRocket)) {
-                        // std::cout << "ROCKET COLLISION" << std::endl;
                         rocket->setVel(0, 0);
                         rocket->setActive(false);
                         rocket->setExploding(true);
