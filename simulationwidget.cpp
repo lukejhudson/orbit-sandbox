@@ -265,6 +265,7 @@ void SimulationWidget::paintEvent(QPaintEvent *) {
     // --> Background isn't affected as much --> Try to give some parallax
     double reducedScale = (scale + 4) / 5;
 
+    std::list<Body*> *bodies = sim->getBodies();
     if (sim->getMode() == Simulation::Exploration) {
         rocket = sim->getRocket();
         rocketCopy = rocket->copy();
@@ -278,8 +279,6 @@ void SimulationWidget::paintEvent(QPaintEvent *) {
         *backgroundOffset += QPointF(rocketCopy->getVelX() * scaleFactor,
                                      rocketCopy->getVelY() * scaleFactor);
     }
-
-    std::list<Body*> *bodies = sim->getBodies();
 
     // Draw black background
     p.fillRect(0, 0, width(), height(), QColor(0, 0, 0));

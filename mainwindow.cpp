@@ -21,6 +21,9 @@ MainWindow::MainWindow() {
     labelFont = new QFont("Fantasy", 10);
     labelFontBold = new QFont("Fantasy", 10, QFont::Bold);
 
+    // Set default font
+    setFont(*labelFont);
+
     createMainMenu();
 }
 

@@ -1,6 +1,5 @@
 TODO: 
 	Not spawning enough stuff in exploration mode?
-	Rocket sometimes dies on spawn
 
 	Make arrow glow or snap or something when speed is correct for orbit
 		How do you know what object the user is trying to orbit?
@@ -33,7 +32,6 @@ TODO:
 BUGS:
 	Resizing a lot can cause crashes?
 	Collision detection ignoring the alpha channel (but not when using .pixelColor)
-	Bodies jittery again (due to mutex?
 
 CHANGELOG:
 	8/3
@@ -196,7 +194,12 @@ CHANGELOG:
 	Added a panel in Exploration mode which shows the rocket's angle, speed and direction
 	Improved thread safety, so fewer segmentation faults
 
-
+	18/4
+	Fixed bodies stuttering in Exploration mode
+	Set a default font
+		Proportions of text should be more consistent, e.g. in the controls screen
+	Adjusted the distance away from the central body that planets spawn at in a planetary system
+		Rocket should be much less likely to die right away in Exploration mode
 	
 
 

@@ -5,7 +5,8 @@
 #include "simulation.h"
 #include "simulationwidget.h"
 
-#define MAX_SYSTEM_ORBIT_RADIUS 250
+#define MAX_SYSTEM_ORBIT_RADIUS 300
+#define MIN_SYSTEM_ORBIT_RADIUS 75
 #define MAX_PLANET_ORBIT_RADIUS 20
 // How scaled down the map is compared to the user's view
 #define MAP_SCALE 100.0
@@ -84,7 +85,14 @@ void Simulation::resetSim() {
 void Simulation::calculateOrbitVelocity(Body *newBody, Body *central, int maxOrbitDistance) {
     double x = central->getX();
     double y = central->getY();
-    double centralDiam = central->getDiameter();
+    double centralDiam;
+    if (central->getType() == Body::Star || central->getType() == Body::WhiteDwarf) {
+        centralDiam = MIN_SYSTEM_ORBIT_RADIUS;
+    } else if (central->getType()== Body::BlackHole) {
+        centralDiam = MIN_SYSTEM_ORBIT_RADIUS * 2;
+    } else {
+        centralDiam = central->getDiameter();
+    }
     double centralMass = central->getMass();
     Vector centralPos = central->getPos();
     // Max distance should depend on central body?
@@ -379,6 +387,7 @@ void Simulation::run() {
 
             // Iterator of start of batch of bodies
             auto start = bodies.begin();
+            // Don't want anything else editing the bodies list while a tick is in progress
             mut.lock();
             for (int i = 0; i < numThreads; i++) {
                 // Create batch of bodies for this thread
