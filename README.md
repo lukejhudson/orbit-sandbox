@@ -1,5 +1,55 @@
 # orbit-sandbox
-A simple game built around the force of gravity acting on celestial bodies in space. 
+# orbit-sandbox #
+## About ##
+A simple game built around the force of gravity acting on celestial bodies in space. Written in C++ using the Qt framework.
+
+## Learning Outcomes ##
+
+
+Simulation
+	Gravity equation
+	Calculating orbit velocity
+	Satisfying to see it work realistically
+C++ skills
+	Pointers, memory management
+		Valgrind
+		Gain overall confidence
+		Learn about Qt which is a very popular framework
+Graphics
+	Drawing sprites, simple animations
+		Having a camera that can move around and zoom in/out posed some interesting challenges
+			Needed to ensure that proportions stayed the same when zooming
+			Had to really understand the problem to ensure that the camera offsets were calculated perfectly
+				Wanted camera controls to feel accurate and responsive
+					Proud of the solution
+	Tiling the backgrounds
+		A new problem for me
+		Making backgrounds tile infinitely and move slightly as the camera moves
+			Also attempts to give a sense of parallax
+Optimisation
+	Can be very large numbers (several thousands) of bodies in the simulation 
+		Optimisation very important since performance was severly lacking with this number of bodies
+		Kept track of how many ticks were performed each second
+			Limited to 60, in a simple simulation like this should always be 60
+			Used this metric to determine the effects of different optimisations
+	Multi-thread
+		Thread safety using mutexes
+		1 cpu core maxed out --> parallelise to spread the workload out more evenly, make much better use of multicore and multithread cpus
+	Collision detection
+		Check if bodies are remotely close to each other
+		If so, check if bounding rectangles overlap
+		If so and body is on screen and we aren't zoomed out very far, check if sprites overlap
+			Simulation less precise when zoomed out (since wouldn't be able to tell anyway)
+				Collision detection with bounding rectangles good enough
+			Costly but accurate, only calculate when necessary
+	Gravitational pull
+		Ignore scenarios where the resulting pull is practically 0
+			Tiny body vs massive body
+			Bodies super far apart
+		Uses costly square root function so want to minimise the number of times the force needs to be calculated
+	General optimisations such as reducing the number of times variables need to be fetched
+
+## Tour of the Software ##
 
 ![Main Menu](Screenshots/MainMenu.png)
 
