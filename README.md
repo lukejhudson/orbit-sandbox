@@ -1,4 +1,3 @@
-# orbit-sandbox
 # orbit-sandbox #
 ## About ##
 A simple game built around the force of gravity acting on celestial bodies in space. Written in C++ using the Qt framework.
